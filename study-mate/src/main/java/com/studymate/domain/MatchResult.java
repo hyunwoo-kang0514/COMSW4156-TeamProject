@@ -1,5 +1,4 @@
 package com.studymate.domain;
 
-public MatchResult {
-
+public class MatchResult {
 }
