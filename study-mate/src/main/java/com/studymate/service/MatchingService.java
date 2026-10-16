@@ -3,10 +3,13 @@ package com.studymate.service;
 import com.studymate.domain.Preference;
 import com.studymate.domain.Student;
 import com.studymate.domain.StudyGroup;
+import com.studymate.domain.TimeSlot;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class MatchingService {
@@ -17,23 +20,82 @@ public class MatchingService {
         this.studyGroupService = studyGroupService;
     }
 
-    public ArrayList<StudyGroup> findCompatibleStudyGroups(Student student) {
-        Preference preference = student.getPreference();
-        // get all groups that are available
-        List<StudyGroup> existingGroups = studyGroupService.getStudyGroups();
-        int groupNum = existingGroups.size();
+    /**
+     *
+     * @param student
+     * @return
+     */
+    public List<StudyGroup> findCompatibleStudyGroups(Student student) {
 
-        for (StudyGroup group : existingGroups) {
+        // Get study groups that meet basic criteria: still recruiting, match school, match course, match mode
+        List<StudyGroup> candidates = studyGroupService.getCandidateGroups(
+                  student.getSchool()
+                 ,student.getPreference().getCourse()
+                 ,student.getPreference().getMeetingMode());
+
+        // if there is no study groups that match basic criteria, just return
+        if (candidates.isEmpty()) {
+            return candidates;
+        }
+        List<StudyGroup> rankedStudyGroups = rankCompatibleGroups(student, candidates);
+        return new ArrayList<>();
+    }
+
+    private List<StudyGroup> rankCompatibleGroups(Student student, List<StudyGroup> candidates) {
+
+        List<TimeSlot> pTimes = student.getPreference().getAvailableTimes();;
+        List<String> pStyles = student.getPreference().getStudyStyles();
+        int pSize = student.getPreference().getPreferredGroupSize();
+
+        // Ranking top 3 groups
+        for (StudyGroup group : candidates) {
+            int score = 0;
+            // case that say it is recruiting but already fulled
             if (group.getMemberIds().size() == group.getMaxMembers()) {
                 continue;
             }
 
-            if (group.getCourse().equals(preference.getCourse())) {
-                continue;
+            // assume that group size must be greater or equal than two
+            if (group.getMaxMembers() == pSize) {
+                score += 25;
             }
+            else if (group.getMaxMembers() >= pSize - 1 && group.getMaxMembers() <= pSize + 1) {
+                score += 20;
+            }
+
+            // Assume that user and group must select at least two study styles and there is three in total and unique
+            int matchStyle = 0;
+            for (String sStyle : pStyles) {
+                for (String gStyle : group.getStudyStyles()) {
+                    if (sStyle.equals(gStyle)) {
+                        matchStyle++;
+                    }
+                }
+            }
+
+            if (matchStyle == pStyles.size()) {
+                score += 25;
+            } else if (matchStyle >= 1) {
+                score += 20;
+            }
+
+            // match available times
+
+            int matchTime = 0;
+            for (TimeSlot pTime : pTimes) {
+                for (TimeSlot gTime : group.getSchedules()) {
+                    // Logic should be here
+                }
+            }
+
+
+
+
+
+
 
         }
 
-        return new ArrayList<>();
+
     }
 }
