@@ -1,4 +1,7 @@
 package com.studymate.repository;
 
-public interface StudentRepository {
+import com.studymate.domain.Student;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface StudentRepository extends JpaRepository<Student, Long> {
 }

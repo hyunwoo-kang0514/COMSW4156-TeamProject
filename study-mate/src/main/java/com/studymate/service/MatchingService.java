@@ -6,6 +6,8 @@ import com.studymate.domain.StudyGroup;
 import com.studymate.domain.TimeSlot;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -15,18 +17,18 @@ import java.util.Map;
 public class MatchingService {
 
     private final StudyGroupService studyGroupService;
+    private static final int MAX_MATCH_RESULT = 3;
 
     public MatchingService(final StudyGroupService studyGroupService) {
         this.studyGroupService = studyGroupService;
     }
 
     /**
-     *
-     * @param student
-     * @return
+     * Find compatible study groups
+     * @param student instance of the student
+     * @return list of group that match (max = MAX_MATCH_RESULT)
      */
     public List<StudyGroup> findCompatibleStudyGroups(Student student) {
-
         // Get study groups that meet basic criteria: still recruiting, match school, match course, match mode
         List<StudyGroup> candidates = studyGroupService.getCandidateGroups(
                   student.getSchool()
@@ -37,15 +39,15 @@ public class MatchingService {
         if (candidates.isEmpty()) {
             return candidates;
         }
-        List<StudyGroup> rankedStudyGroups = rankCompatibleGroups(student, candidates);
-        return new ArrayList<>();
+        return getMatchResult(getScores(student, candidates));
     }
 
-    private List<StudyGroup> rankCompatibleGroups(Student student, List<StudyGroup> candidates) {
+    private Map<StudyGroup, Integer> getScores(Student student, List<StudyGroup> candidates) {
 
         List<TimeSlot> pTimes = student.getPreference().getAvailableTimes();;
         List<String> pStyles = student.getPreference().getStudyStyles();
         int pSize = student.getPreference().getPreferredGroupSize();
+        Map<StudyGroup, Integer> scores = new HashMap<>();
 
         // Ranking top 3 groups
         for (StudyGroup group : candidates) {
@@ -63,7 +65,7 @@ public class MatchingService {
                 score += 20;
             }
 
-            // Assume that user and group must select at least two study styles and there is three in total and unique
+            // Assume that user and group must select at least two study styles and there is three in total, which are unique
             int matchStyle = 0;
             for (String sStyle : pStyles) {
                 for (String gStyle : group.getStudyStyles()) {
@@ -79,23 +81,63 @@ public class MatchingService {
                 score += 20;
             }
 
-            // match available times
+            // Calculate total overlapping time in minutes
+            long overlapMinutes = 0;
 
-            int matchTime = 0;
             for (TimeSlot pTime : pTimes) {
                 for (TimeSlot gTime : group.getSchedules()) {
-                    // Logic should be here
+
+                    // Different day -> cannot overlap
+                    if (pTime.getDay() != gTime.getDay()) {
+                        continue;
+                    }
+                    // Later start time
+                    LocalTime overlapStart =
+                            pTime.getStartTime().isAfter(gTime.getStartTime())
+                                    ? pTime.getStartTime()
+                                    : gTime.getStartTime();
+                    // Earlier end time
+                    LocalTime overlapEnd =
+                            pTime.getEndTime().isBefore(gTime.getEndTime())
+                                    ? pTime.getEndTime()
+                                    : gTime.getEndTime();
+                    // If start < end, there is an overlap
+                    if (overlapStart.isBefore(overlapEnd)) {
+                        overlapMinutes += Duration
+                                .between(overlapStart, overlapEnd)
+                                .toMinutes();
+                    }
                 }
             }
-
-
-
-
-
-
-
+            if (overlapMinutes >= 120) {
+                score += 30;
+            } else if (overlapMinutes >= 60) {
+                score += 25;
+            } else if (overlapMinutes > 0) {
+                score += 15;
+            }
+            // the total is 80
+            scores.put(group, score);
         }
-
-
+        return scores;
     }
+
+    /**
+     * Get match result
+     * @param scores scores of associated study group
+     * @return list of match result
+     */
+    private List<StudyGroup> getMatchResult(Map<StudyGroup, Integer> scores) {
+        List<Map.Entry<StudyGroup, Integer>> rankedGroups =
+                new ArrayList<>(scores.entrySet());
+        rankedGroups.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
+        List<StudyGroup> matchResult = new ArrayList<>();
+        for (int i = 0; i < rankedGroups.size() && i < MAX_MATCH_RESULT; i++) {
+            matchResult.add(rankedGroups.get(i).getKey());
+        }
+        return matchResult;
+    }
+
+
+
 }

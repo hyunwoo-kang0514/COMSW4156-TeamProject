@@ -7,6 +7,7 @@ import lombok.Setter;
 @Setter
 @Entity
 public class Student {
+    private Long id;
     private String studentId;
     private String name;
     private String email;
