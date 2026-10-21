@@ -1,14 +1,17 @@
 package com.studymate.domain;
-import jakarta.persistence.Entity;
+
+import jakarta.persistence.Embeddable;
 import lombok.Getter;
 import lombok.Setter;
+
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 
-@Entity
+@Embeddable
 @Getter
 @Setter
 public class TimeSlot {
+
     private DayOfWeek day;
     private LocalTime startTime;
     private LocalTime endTime;

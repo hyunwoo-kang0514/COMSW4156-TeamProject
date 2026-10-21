@@ -1,12 +1,9 @@
 package com.studymate.service;
 
 import com.studymate.domain.Student;
-import com.studymate.domain.StudyGroup;
 import com.studymate.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 @Service
 public class StudentService {

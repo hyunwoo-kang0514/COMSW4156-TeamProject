@@ -1,6 +1,5 @@
 package com.studymate.service;
 
-import com.studymate.domain.Preference;
 import com.studymate.domain.Student;
 import com.studymate.domain.StudyGroup;
 import com.studymate.domain.TimeSlot;
@@ -44,7 +43,7 @@ public class MatchingService {
 
     private Map<StudyGroup, Integer> getScores(Student student, List<StudyGroup> candidates) {
 
-        List<TimeSlot> pTimes = student.getPreference().getAvailableTimes();;
+        List<TimeSlot> pTimes = student.getPreference().getAvailableTimes();
         List<String> pStyles = student.getPreference().getStudyStyles();
         int pSize = student.getPreference().getPreferredGroupSize();
         Map<StudyGroup, Integer> scores = new HashMap<>();
