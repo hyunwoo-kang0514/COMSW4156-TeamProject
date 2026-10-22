@@ -22,7 +22,7 @@ public class StudyGroup {
     private int numMembers;
     @ElementCollection
     private List<TimeSlot> schedules;
-    @Enumerated(EnumType.STRING)
+    @ElementCollection
     private List<String> studyStyles;
     private String meetingMode;
     private boolean isRecruiting;
