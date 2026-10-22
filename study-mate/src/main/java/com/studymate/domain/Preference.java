@@ -16,16 +16,14 @@ public class Preference {
     @OneToOne
     @MapsId
     @JoinColumn(
-
             name = "student_id",
-
             foreignKey = @ForeignKey(name = "fk_preference_student")
-
     )
     private Student student;
     private String course;
     @ElementCollection
     private List<TimeSlot> availableTimes;
+    @ElementCollection
     private List<String> studyStyles;
     private int preferredGroupSize;
     private String meetingMode;
