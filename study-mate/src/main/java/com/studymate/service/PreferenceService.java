@@ -31,4 +31,11 @@ public class PreferenceService {
         Preference savedPreference = preferenceRepository.save(updatedPreference);
         return savedPreference;
     }
+
+    public Preference getStudentStudyPreferences(Long id){
+        Preference gottenPreference = preferenceRepository.findById(id)
+            .orElseThrow(() -> 
+            new RuntimeException("Preference not found for studentId " + id));
+        return gottenPreference;
+    }
 }

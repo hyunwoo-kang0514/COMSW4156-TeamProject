@@ -44,4 +44,10 @@ public class ApiController {
         return new ResponseEntity<>(savedPreference, HttpStatus.OK);
 
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Preference> getStudentStudyPreferences(@PathVariable Long id){
+        Preference gottenPreference = preferenceService.getStudentStudyPreferences(id);
+        return new ResponseEntity<>(gottenPreference, HttpStatus.OK);
+    }
 }
