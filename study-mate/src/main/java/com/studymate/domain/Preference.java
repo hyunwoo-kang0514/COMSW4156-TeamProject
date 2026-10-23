@@ -13,6 +13,7 @@ public class Preference {
 
     @Id
     private Long studentId;
+
     @OneToOne
     @MapsId
     @JoinColumn(

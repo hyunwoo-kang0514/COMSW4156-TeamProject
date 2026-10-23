@@ -74,9 +74,12 @@ public class StudyGroupService {
      * @param student instance of the student
      * @param studyGroup instance of study group
      */
-    public void joinGroup(Student student, StudyGroup studyGroup) {
+    public StudyGroup joinGroup(Student student, StudyGroup studyGroup) {
         List<String> newMemberIds = studyGroup.getMemberIds();
         newMemberIds.add(student.getStudentId());
         studyGroup.setMemberIds(newMemberIds);
+        studyGroup.setNumMembers(studyGroup.getNumMembers() + 1);
+        // TO DO: need to update the DB here
+        return studyGroup;
     }
 }

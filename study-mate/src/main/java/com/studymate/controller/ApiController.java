@@ -116,6 +116,7 @@ public class ApiController {
                     .build();
         }
 
+
         // check availability of the group size
         if (!studyGroupService.canJoin(studyGroup)) {
             return ResponseEntity

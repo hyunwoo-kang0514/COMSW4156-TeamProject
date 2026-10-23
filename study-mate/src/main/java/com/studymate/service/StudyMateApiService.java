@@ -1,10 +1,19 @@
 package com.studymate.service;
 
 
+import com.studymate.domain.Student;
+import com.studymate.repository.StudentRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class StudyMateApiService {
+
+    private final StudentRepository studentRepository;
+    @Autowired
+    public StudyMateApiService(StudentRepository studentRepository) {
+        this.studentRepository = studentRepository;
+    }
 
     /**
      * Validate api key exist
@@ -12,6 +21,7 @@ public class StudyMateApiService {
      * @return if api key exist return true, otherwise return false
      */
     public boolean validateApiKey(final String apiKey) {
-        return true;
+        return studentRepository.existsByApiKey(apiKey);
     }
+
 }
