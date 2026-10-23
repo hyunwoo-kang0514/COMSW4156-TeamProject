@@ -3,10 +3,7 @@ package com.studymate.service;
 import org.springframework.stereotype.Service;
 import com.studymate.domain.Preference;
 import com.studymate.repository.PreferenceRepository;
-import org.springframework.stereotype.Service;
 import lombok.AllArgsConstructor;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.bind.annotation.PathVariable;
 
 @AllArgsConstructor
 @Service
