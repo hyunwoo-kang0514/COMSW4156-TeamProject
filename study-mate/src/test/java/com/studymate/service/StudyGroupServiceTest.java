@@ -242,4 +242,77 @@ public class StudyGroupServiceTest {
         }
 
     }
+
+    // ---------- leaveGroup ----------
+    // AI-generated (Claude Code), reviewed by Ziyue Fang. See README "AI Documentation".
+
+    @Test
+    void leaveGroupRemovesMemberDecrementsCountAndSaves() {
+        // Arrange: student "hk3382" is one of 2 members in studyGroup
+        when(studyGroupRepository.save(studyGroup)).thenReturn(studyGroup);
+
+        // Act
+        StudyGroup result = studyGroupService.leaveGroup(student, studyGroup);
+
+        // Assert
+        assertThat(result.getNumMembers()).isEqualTo(1);
+        assertFalse(result.getMemberIds().contains("hk3382"));
+        assertTrue(result.getMemberIds().contains("jw2022"));
+        verify(studyGroupRepository).save(studyGroup);
+    }
+
+    @Test
+    void leaveGroupWhenNotMemberChangesNothingAndDoesNotSave() {
+        // Arrange: studyGroup2 only contains "jw2022"
+        int sizeBefore = studyGroup2.getNumMembers();
+
+        // Act
+        StudyGroup result = studyGroupService.leaveGroup(student, studyGroup2);
+
+        // Assert
+        assertThat(result.getNumMembers()).isEqualTo(sizeBefore);
+        assertEquals(List.of("jw2022"), result.getMemberIds());
+        verify(studyGroupRepository, never()).save(any());
+    }
+
+    @Test
+    void leaveGroupRemovesDuplicateEntriesForSameStudent() {
+        // Arrange: bad legacy data with the same id listed twice
+        studyGroup.getMemberIds().add("hk3382");
+        studyGroup.setNumMembers(3);
+        when(studyGroupRepository.save(studyGroup)).thenReturn(studyGroup);
+
+        // Act
+        StudyGroup result = studyGroupService.leaveGroup(student, studyGroup);
+
+        // Assert
+        assertEquals(List.of("jw2022"), result.getMemberIds());
+        assertThat(result.getNumMembers()).isEqualTo(1);
+    }
+
+    @Test
+    void leaveGroupNeverDropsMemberCountBelowZero() {
+        // Arrange: numMembers out of sync with memberIds
+        studyGroup.setNumMembers(0);
+        when(studyGroupRepository.save(studyGroup)).thenReturn(studyGroup);
+
+        // Act
+        StudyGroup result = studyGroupService.leaveGroup(student, studyGroup);
+
+        // Assert
+        assertThat(result.getNumMembers()).isEqualTo(0);
+    }
+
+    @Test
+    void leaveGroupKeepsRecruitingFlagUnchanged() {
+        // Arrange
+        studyGroup.setRecruiting(false);
+        when(studyGroupRepository.save(studyGroup)).thenReturn(studyGroup);
+
+        // Act
+        StudyGroup result = studyGroupService.leaveGroup(student, studyGroup);
+
+        // Assert
+        assertFalse(result.isRecruiting());
+    }
 }
