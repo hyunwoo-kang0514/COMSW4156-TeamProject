@@ -1,41 +1,55 @@
 package com.studymate.domain;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.util.Date;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import jakarta.persistence.*;
+import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.ArrayList;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-
 @Table(name="study_preferences")
 @Entity
 public class Preference {
 
     @Id
     @Column(name="student_id")
-    private Long studentId;
+    private Long id;
 
-    @Column(name="school")
-    private String school;
+    @OneToOne
+    @MapsId                          
+    @JoinColumn(name = "student_id")
+    @JsonIgnore                       
+    private Student student; 
 
-    @Column(name="year")
-    long year;
+    @ElementCollection
+    private List<TimeSlot> availableTimes = new ArrayList<TimeSlot>();
 
     @Column(name="course")
     String course;
 
-    @Column(name="schedule")
-    Date schedule; //maybe have a bunch of times the student this preference is attached to is available for??
+    @ElementCollection
+    @Column(name="study_styles")
+    private List<String> studyStyles = new ArrayList<String>();
+
 
     @Column(name="preferred_group_size")
     int preferredGroupSize;
+
+
+    @Column(name="meeting_mode")
+    private String meetingMode;
+    /**
+     * "IN_PERSON"
+     * "ONLINE"
+     * "HYBRID"
+     * "ANY"xs
+     */
 
 
 }
