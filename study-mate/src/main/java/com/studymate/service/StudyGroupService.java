@@ -79,7 +79,8 @@ public class StudyGroupService {
         newMemberIds.add(student.getStudentId());
         studyGroup.setMemberIds(newMemberIds);
         studyGroup.setNumMembers(studyGroup.getNumMembers() + 1);
-        // TO DO: need to update the DB here
-        return studyGroup;
+        // AI-fixed (Claude Code): this previously never persisted the new membership
+        // (missing repository.save() call) — see README "AI Documentation" section.
+        return studyGroupRepository.save(studyGroup);
     }
 }

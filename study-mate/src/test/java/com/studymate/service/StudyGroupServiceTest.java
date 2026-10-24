@@ -226,12 +226,14 @@ public class StudyGroupServiceTest {
         Student student3 = new Student();
         student3.setStudentId("new-member");
         int sizeBefore = studyGroup.getNumMembers();
+        when(studyGroupRepository.save(studyGroup)).thenReturn(studyGroup);
 
         // Act
         StudyGroup result = studyGroupService.joinGroup(student3, studyGroup);
 
         // Assert
         assertThat(result.getNumMembers()).isEqualTo(sizeBefore + 1);
+        verify(studyGroupRepository).save(studyGroup);
 
         int i = 0;
         for (String id : studyGroup.getMemberIds()) {
