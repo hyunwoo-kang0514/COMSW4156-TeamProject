@@ -1,4 +1,16 @@
 package com.studymate.controller;
+import lombok.AllArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PostMapping;
+import com.studymate.domain.Preference;
+import com.studymate.service.PreferenceService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import com.studymate.domain.Student;
 import com.studymate.domain.StudyGroup;
@@ -7,11 +19,9 @@ import com.studymate.service.MatchingService;
 import com.studymate.service.StudentService;
 import com.studymate.service.StudyGroupService;
 import com.studymate.service.StudyMateApiService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -22,30 +32,100 @@ import java.util.List;
  * idempotent (200 + current group) instead of a 400 error, per the proposal's
  * retry-safety requirement. See README "AI Documentation" section for details.
  */
+@AllArgsConstructor
 @RestController
 @RequestMapping("/api")
 public class ApiController {
 
+    private final PreferenceService preferenceService;
     private final StudyMateApiService studyMateApiService;
     private final StudentService studentService;
     private final MatchingService matchingService;
     private final StudyGroupService studyGroupService;
 
-    @Autowired
-    public ApiController(final StudyMateApiService studyMateApiService,
-                         final StudentService studentService,
-                         final MatchingService matchingService,
-                         final StudyGroupService studyGroupService
-    ) {
-        this.studyMateApiService = studyMateApiService;
-        this.studentService = studentService;
-        this.matchingService = matchingService;
-        this.studyGroupService = studyGroupService;
-    }
 
     @GetMapping("/health")
     public String health() {
         return "StudyMate API is running";
+    }
+
+
+    /**
+     * Give a student a specific study preference
+     * @param apiKey api key
+     * @param preference the preference
+     * @return 201/400?
+     */
+    @PostMapping("/")
+    public ResponseEntity<Preference> addStudentStudyPreferences(
+            @RequestHeader("X-API-KEY") final String apiKey,
+            @RequestBody Preference preference
+    ) throws IOException {
+        // Validate whether API key is valid
+        if(!studyMateApiService.validateApiKey(apiKey)) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .build();
+        }
+
+        // Add the preference in the request body to the database
+        Preference savedPreference = preferenceService.addStudentStudyPreferences(preference);
+        
+        return new ResponseEntity<>(savedPreference, HttpStatus.CREATED);
+
+    }
+
+    /**
+     * Update a given student's study preference
+     * @param id the student id
+     * @param preference the preference
+     * @return 200/400?
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<Preference> updateStudentStudyPreferences(
+            @RequestHeader("X-API-KEY") final String apiKey,
+            @PathVariable Long id, 
+            @RequestBody Preference preference
+    ) throws IOException {
+        // Validate whether API key is valid
+        if(!studyMateApiService.validateApiKey(apiKey)) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .build();
+        }
+
+        // update the study preference for this student
+        Preference savedPreference = preferenceService.updateStudentStudyPreferences(id, preference);
+        
+        // returns the created study preference
+        return new ResponseEntity<>(savedPreference, HttpStatus.OK);
+
+    }
+
+
+    /**
+     * Update a given student's study preference
+     * @param apiKey api key
+     * @param id the student id
+     * @return 200/400?
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<Preference> getStudentStudyPreferences(
+            @RequestHeader("X-API-KEY") final String apiKey,
+            @PathVariable Long id
+    ) throws IOException {
+        // Validate whether API key is valid
+        if(!studyMateApiService.validateApiKey(apiKey)) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .build();
+        }
+
+        // get the information stored in a student's study preferences
+        Preference gottenPreference = preferenceService.getStudentStudyPreferences(id);
+
+        // return the preference according to that student
+        return new ResponseEntity<>(gottenPreference, HttpStatus.OK);
     }
 
     /**
