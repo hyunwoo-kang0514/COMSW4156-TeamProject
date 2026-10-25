@@ -6,4 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface StudentRepository extends JpaRepository<Student, Long> {
 
     boolean existsByApiKey(String apiKey);
+    boolean existsByStudentId(String studentId);
 }
