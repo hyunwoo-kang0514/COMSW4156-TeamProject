@@ -60,7 +60,7 @@ The proposal specifies six operations. This iteration focuses on a vertical slic
 | Health check | `GET /api/health` | ✅ Implemented |
 | Find Compatible Study Groups | `GET /api/find` | ✅ Implemented, unit-tested, API-tested |
 | Join Study Group | `POST /api/join` | ✅ Implemented, unit-tested, API-tested |
-| Register Student | — | 🚧 Planned (owner: Kevin Chuang) |
+| Register Student | `POST /api/students` | ✅ Implemented, unit-tested, API-tested |
 | Register/Update Study Preference | — | 🚧 Planned (owner: Ugorji Benjamin Barrah) |
 | Create Study Group | — | 🚧 Planned (owner: Hyunwoo Kim) |
 | Leave Study Group | — | 🚧 Planned (owner: Ziyue Fang) |
@@ -88,6 +88,34 @@ All endpoints are under the base path `/api` and require the `X-API-KEY` header 
 Liveness check.
 - **Input:** none
 - **Output:** `200 OK`, body: `StudyMate API is running`
+
+### POST /api/students
+
+Registers a new student and generates a unique API key.
+
+**Headers:** Content-Type: application/json. No API key required.
+
+**Request body:**
+{
+  "studentId": "hc3689",
+  "name": "Kevin",
+  "email": "student@example.com",
+  "school": "Columbia",
+  "major": "Computer Science",
+  "year": 1
+}
+
+**Success:** 201 Created — Returns the registered student's information, database ID, and generated API key.
+
+**Errors:**
+- 400 Bad Request — Missing or invalid required student information.
+- 409 Conflict — Student ID already registered.
+
+**Side effects:** Creates a new student record in the database and generates a unique API key.
+
+**Call-order dependency:** None. Students must register before accessing endpoints that require an API key.
+
+**Duplicate requests:** A second registration using the same student ID returns 409 Conflict without creating another student.
 
 ### `GET /api/find?studentId={id}`
 Finds up to the top 3 study groups compatible with the student's registered preference.
