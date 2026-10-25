@@ -22,6 +22,7 @@ import com.studymate.service.StudyMateApiService;
 import org.springframework.web.bind.annotation.*;
 
 import com.studymate.dto.RegisterStudentRequest;
+import com.studymate.dto.RegisterStudentResponse;
 
 import java.io.IOException;
 import java.util.List;
@@ -66,9 +67,20 @@ public class ApiController {
 
             Student registeredStudent = studentService.registerStudent(student);
 
+            RegisterStudentResponse response = new RegisterStudentResponse(
+                    registeredStudent.getId(),
+                    registeredStudent.getStudentId(),
+                    registeredStudent.getName(),
+                    registeredStudent.getEmail(),
+                    registeredStudent.getSchool(),
+                    registeredStudent.getMajor(),
+                    registeredStudent.getYear(),
+                    registeredStudent.getApiKey()
+            );
+
             return ResponseEntity
                     .status(HttpStatus.CREATED)
-                    .body(registeredStudent);
+                    .body(response);
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity

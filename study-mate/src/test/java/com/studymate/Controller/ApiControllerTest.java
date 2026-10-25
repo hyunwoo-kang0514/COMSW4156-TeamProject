@@ -31,7 +31,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.studymate.dto.RegisterStudentRequest;
+import com.studymate.dto.RegisterStudentResponse;
 import static org.mockito.ArgumentMatchers.any;
+
 
 @ExtendWith(MockitoExtension.class)
 public class ApiControllerTest {
@@ -303,7 +305,15 @@ public class ApiControllerTest {
 
         // Assert
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody()).isEqualTo(student);
+        assertThat(response.getBody())
+                .isInstanceOf(RegisterStudentResponse.class);
+
+        RegisterStudentResponse body =
+                (RegisterStudentResponse) response.getBody();
+
+        assertThat(body.getStudentId()).isEqualTo(student.getStudentId());
+        assertThat(body.getName()).isEqualTo(student.getName());
+        assertThat(body.getApiKey()).isEqualTo(student.getApiKey());
         verify(studentService).registerStudent(any(Student.class));
     }
 
