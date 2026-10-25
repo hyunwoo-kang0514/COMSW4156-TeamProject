@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import com.studymate.domain.Student;
 import com.studymate.domain.StudyGroup;
+import com.studymate.dto.JoinGroupRequest;
 import com.studymate.service.MatchingService;
 import com.studymate.service.StudentService;
 import com.studymate.service.StudyGroupService;
@@ -23,6 +24,14 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * REST entry points for StudyMate. The /find and /join handlers were debugged
+ * with AI assistance (Claude Code): fixed an invalid double-@RequestBody binding
+ * on /join (moved to JoinGroupRequest + POST), switched /find's studentId to
+ * @RequestParam, and corrected the already-a-member case on /join to be
+ * idempotent (200 + current group) instead of a 400 error, per the proposal's
+ * retry-safety requirement. See README "AI Documentation" section for details.
+ */
 @AllArgsConstructor
 @RestController
 @RequestMapping("/api")
@@ -120,16 +129,19 @@ public class ApiController {
     }
 
     /**
-     * Find a compatible study group
-     * @param apiKey apikey
-     * @param studentId id of the student
-     * @return 200/400?
+     * Find up to the top three study groups compatible with a student's registered preference.
+     * @param apiKey caller's API key, validated against a registered student
+     * @param studentId id of the student requesting matches
+     * @return 200 with the ranked list of compatible groups (possibly empty),
+     *         401 if the API key is invalid,
+     *         404 if the student does not exist,
+     *         400 if the student has not registered a study preference
      */
     @GetMapping("/find")
     public ResponseEntity<?> findCompatibleStudyGroups(
             @RequestHeader("X-API-KEY") final String apiKey,
-            @RequestBody final Long studentId
-    ) throws IOException {
+            @RequestParam final Long studentId
+    ) {
         // Validate whether API key is valid
         if(!studyMateApiService.validateApiKey(apiKey)) {
             return ResponseEntity
@@ -159,18 +171,19 @@ public class ApiController {
     }
 
     /**
-     * Join a student to a study group
+     * Join a student to a study group. A group no longer needs to be one of the
+     * student's current compatible matches in order to join it; the match result
+     * is a recommendation, not a requirement.
      * @param apiKey api key
-     * @param studentId id of the student
-     * @param groupId id of the group
-     * @return 200/400?
+     * @param request body containing the student id and the target group id
+     * @return 200 with the updated group on success (also if already a member),
+     *         401 if the API key is invalid,
+     *         400 if the student or group does not exist, or the group is already full
      */
-    @GetMapping("/join")
-    // TO FIX : make a join group request
+    @PostMapping("/join")
     public ResponseEntity<?> joinStudyGroup(
             @RequestHeader("X-API-KEY") final String apiKey,
-            @RequestBody final Long studentId,
-            @RequestBody final Long groupId
+            @RequestBody final JoinGroupRequest request
     ) {
         // Validate whether API key is valid
         if (!studyMateApiService.validateApiKey(apiKey)) {
@@ -178,8 +191,8 @@ public class ApiController {
                     .status(HttpStatus.UNAUTHORIZED)
                     .build();
         }
-        Student student = studentService.findStudentById(studentId);
-        StudyGroup studyGroup = studyGroupService.findStudyGroupById(groupId);
+        Student student = studentService.findStudentById(request.getStudentId());
+        StudyGroup studyGroup = studyGroupService.findStudyGroupById(request.getGroupId());
 
         // check either student or study group is valid
         if (student == null || studyGroup == null) {
@@ -188,11 +201,11 @@ public class ApiController {
                     .build();
         }
 
-        // check if the student already a member of designated group
+        // idempotent retry: already a member, return success with the current group as-is
         if (studyGroupService.isMember(student, studyGroup)) {
             return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .build();
+                    .status(HttpStatus.OK)
+                    .body(studyGroup);
         }
 
         // check availability of the group size
@@ -207,10 +220,5 @@ public class ApiController {
                 .status(HttpStatus.OK)
                 .body(studyGroup);
     }
-
-
-
-
-
 
 }

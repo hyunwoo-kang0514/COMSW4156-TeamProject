@@ -19,4 +19,7 @@ public class Student {
     private int year;
     @OneToOne(mappedBy = "student")
     private Preference preference;
+    // Client always to have exactly one apiKey
+    @Column(unique = true, nullable = false)
+    private String apiKey;
 }

@@ -13,7 +13,7 @@ import java.util.ArrayList;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name="study_preferences")
+@Table(name="preference")
 @Entity
 public class Preference {
 
