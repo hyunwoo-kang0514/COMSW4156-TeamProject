@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import com.studymate.domain.Student;
 import com.studymate.domain.StudyGroup;
+import com.studymate.request.CreateStudyGroupRequest;
 import com.studymate.service.MatchingService;
 import com.studymate.service.StudentService;
 import com.studymate.service.StudyGroupService;
@@ -22,6 +23,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 @AllArgsConstructor
 @RestController
@@ -38,6 +41,34 @@ public class ApiController {
     @GetMapping("/health")
     public String health() {
         return "StudyMate API is running";
+    }
+
+    /**
+     * Creates a study group with the requesting student as its first member.
+     *
+     * @param apiKey the API key supplied by the caller
+     * @param request the group details and creator's numeric database ID
+     * @return 200 with the saved group, 401 for a missing or rejected key, 404 for a missing creator,
+     *     or 400 with an error message for invalid group values
+     */
+    @PostMapping("/groups")
+    public ResponseEntity<?> createStudyGroup(
+            @RequestHeader(value = "X-API-KEY", required = false) final String apiKey,
+            @RequestBody final CreateStudyGroupRequest request) {
+        if (apiKey == null || apiKey.isBlank() || !studyMateApiService.validateApiKey(apiKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            StudyGroup savedGroup = studyGroupService.createStudyGroup(request);
+            return ResponseEntity.ok(savedGroup);
+        } catch (NoSuchElementException exception) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", exception.getMessage()));
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", exception.getMessage()));
+        }
     }
 
 

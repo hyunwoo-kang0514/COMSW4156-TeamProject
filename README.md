@@ -15,8 +15,10 @@ any valid group as long as the student and group exist, the student is not alrea
 
 `study-mate/src/main/java/com/studymate/request/CreateStudyGroupRequest.java`
 defines the incoming JSON fields for group creation. The service operation is
-implemented in `StudyGroupService.createStudyGroup`; the HTTP endpoint is not
-implemented yet.
+implemented in `StudyGroupService.createStudyGroup` and is exposed through
+`POST /api/groups`. Send `Content-Type: application/json` and an `X-API-KEY` header
+with the following body. The creator must already exist in the database; there
+is currently no student-registration endpoint.
 
 ```json
 {
@@ -47,8 +49,28 @@ identifier as the first member, sets the member count to one, and opens
 recruitment. It saves a fresh group in a transaction and returns the generated
 group ID with the saved group. Repeated valid calls create separate groups.
 Invalid values throw `IllegalArgumentException`; a missing creator throws
-`NoSuchElementException`. The future controller must map these failures to HTTP
-responses and check the API key. No creation-service tests have been added yet.
+`NoSuchElementException`. The controller maps these failures to the HTTP responses
+below. No creation-service or creation-endpoint tests have been added yet.
+
+| Status | Meaning |
+| --- | --- |
+| `200` | The group was saved; the response contains the group and its generated ID. |
+| `400` | Group values are invalid, or the JSON is missing, malformed, or contains forbidden fields. |
+| `401` | The API key is missing, blank, or rejected by the API-key service. |
+| `404` | No student exists for the provided creator ID. |
+| `415` | The request uses an unsupported content type. |
+| `500` | An unexpected server or database failure occurred. |
+
+Service validation and missing-student responses include an `error` message,
+for example `{"error":"maxMembers must be at least 2."}`. JSON parsing errors
+are handled by Spring and may have a different response body. Spring parses the
+body before the controller runs, so malformed JSON can return `400` before the
+API key is checked.
+
+The existing API-key service is still a placeholder that accepts every supplied
+key. This endpoint rejects missing and blank keys, but arbitrary nonblank keys
+currently pass. It does not verify that the caller owns the creator's student
+record.
 
 The request rejects all unrecognized top-level fields, including `groupId`,
 `school`, `memberIds`, `numMembers`, `isRecruiting`, and `recruiting`, even when
