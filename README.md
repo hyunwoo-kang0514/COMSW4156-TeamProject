@@ -50,7 +50,7 @@ recruitment. It saves a fresh group in a transaction and returns the generated
 group ID with the saved group. Repeated valid calls create separate groups.
 Invalid values throw `IllegalArgumentException`; a missing creator throws
 `NoSuchElementException`. The controller maps these failures to the HTTP responses
-below. No creation-service or creation-endpoint tests have been added yet.
+below.
 
 | Status | Meaning |
 | --- | --- |
@@ -86,3 +86,41 @@ run without a database. From `study-mate/`, run:
 ```sh
 ./mvnw -Dtest=CreateStudyGroupRequestTests test
 ```
+
+## Group creation tests
+
+Tests use JUnit Jupiter with Mockito for test doubles and Spring MockMvc for
+in-memory HTTP request handling. Maven dependencies and the JaCoCo coverage
+configuration are in `study-mate/pom.xml`.
+
+| Test file under `study-mate/src/test/java/com/studymate/` | Coverage |
+| --- | --- |
+| `service/StudyGroupCreationTests.java` | Creator lookup, group defaults, validation, copied input, repeated submissions, and save failures. |
+| `controller/StudyGroupCreationApiTests.java` | JSON binding, returned group, missing/blank/rejected keys, `400`/`401`/`404` responses, forbidden fields, and unsupported content types. |
+| `request/CreateStudyGroupRequestTests.java` | Accepted JSON fields and rejection of unknown or server-controlled fields. |
+
+Service tests mock student lookup and database access. Controller tests mock the
+services while exercising Spring's request parsing and response serialization.
+They do not verify real database persistence or real API-key validation.
+Tests share setup through `@BeforeEach` and run independently without a required
+execution order.
+
+`study-mate/src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker`
+selects Mockito's subclass mock maker. The tests mock non-final classes and
+interfaces, so no JVM agent attachment is needed.
+
+From `study-mate/`, run all tests and configured checks with:
+
+```sh
+./mvnw verify
+```
+
+To run only group-creation tests:
+
+```sh
+./mvnw -Dtest=StudyGroupCreationTests,StudyGroupCreationApiTests,CreateStudyGroupRequestTests test
+```
+
+After `verify`, test results are in `study-mate/target/surefire-reports/` and
+the JaCoCo coverage report is at `study-mate/target/site/jacoco/index.html`.
+These generated directories are ignored by Git.
