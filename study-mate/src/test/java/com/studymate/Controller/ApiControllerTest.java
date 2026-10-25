@@ -30,6 +30,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.studymate.service.PreferenceService;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+
 @ExtendWith(MockitoExtension.class)
 public class ApiControllerTest {
 
@@ -41,6 +47,9 @@ public class ApiControllerTest {
     private MatchingService matchingService;
     @Mock
     private StudyGroupService studyGroupService;
+
+    @Mock
+    private PreferenceService preferenceService;
 
     @InjectMocks
     private ApiController apiController;
@@ -278,4 +287,153 @@ public class ApiControllerTest {
         assertThat(response.getBody()).isEqualTo(studyGroup);
         verify(studyGroupService).joinGroup(student, studyGroup);
     }
+
+
+    //Preference API Testing
+
+    
+        // ---------- POST /api/ : addStudentStudyPreferences ----------
+
+    @Test
+    void addStudentStudyPreferencesWithInvalidApiKeyReturnsUnauthorized() throws Exception {
+        // Arrange
+        when(studyMateApiService.validateApiKey(INVALID_KEY)).thenReturn(false);
+
+        // Act
+        ResponseEntity<Preference> response =
+                apiController.addStudentStudyPreferences(INVALID_KEY, preference);
+
+        // Assert
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        verify(preferenceService, never()).addStudentStudyPreferences(any());
+    }
+
+    @Test
+    void addStudentStudyPreferencesSuccessReturnsCreated() throws Exception {
+        // Arrange
+        preference.setId(STUDENT_ID);
+        when(studyMateApiService.validateApiKey(VALID_KEY)).thenReturn(true);
+        when(preferenceService.addStudentStudyPreferences(preference)).thenReturn(preference);
+
+        // Act
+        ResponseEntity<Preference> response =
+                apiController.addStudentStudyPreferences(VALID_KEY, preference);
+
+        // Assert
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(response.getBody()).isEqualTo(preference);
+        verify(preferenceService).addStudentStudyPreferences(preference);
+    }
+
+    @Test
+    void addStudentStudyPreferencesWithNonExistentStudentThrows() {
+        // Arrange
+        preference.setId(STUDENT_ID);
+        when(studyMateApiService.validateApiKey(VALID_KEY)).thenReturn(true);
+        when(preferenceService.addStudentStudyPreferences(preference))
+                .thenThrow(new RuntimeException("Student not found for id " + STUDENT_ID));
+
+        // Act + Assert
+        assertThrows(RuntimeException.class,
+                () -> apiController.addStudentStudyPreferences(VALID_KEY, preference));
+    }
+
+    // ---------- PUT /api/{id} : updateStudentStudyPreferences ----------
+
+    @Test
+    void updateStudentStudyPreferencesWithInvalidApiKeyReturnsUnauthorized() throws Exception {
+        // Arrange
+        when(studyMateApiService.validateApiKey(INVALID_KEY)).thenReturn(false);
+
+        // Act
+        ResponseEntity<Preference> response =
+                apiController.updateStudentStudyPreferences(INVALID_KEY, STUDENT_ID, preference);
+
+        // Assert
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        verify(preferenceService, never()).updateStudentStudyPreferences(anyLong(), any());
+    }
+
+    @Test
+    void updateStudentStudyPreferencesSuccessReturnsOk() throws Exception {
+        // Arrange
+        Preference updated = new Preference();
+        updated.setId(STUDENT_ID);
+        updated.setCourse("COMS4111");
+        updated.setMeetingMode("online");
+        updated.setPreferredGroupSize(3);
+        updated.setStudyStyles(new ArrayList<>(List.of("quiet")));
+        updated.setAvailableTimes(new ArrayList<>());
+        when(studyMateApiService.validateApiKey(VALID_KEY)).thenReturn(true);
+        when(preferenceService.updateStudentStudyPreferences(STUDENT_ID, preference))
+                .thenReturn(updated);
+
+        // Act
+        ResponseEntity<Preference> response =
+                apiController.updateStudentStudyPreferences(VALID_KEY, STUDENT_ID, preference);
+
+        // Assert
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(updated);
+        verify(preferenceService).updateStudentStudyPreferences(STUDENT_ID, preference);
+    }
+
+    @Test
+    void updateStudentStudyPreferencesWithNonExistentPreferenceThrows() {
+        // Arrange
+        when(studyMateApiService.validateApiKey(VALID_KEY)).thenReturn(true);
+        when(preferenceService.updateStudentStudyPreferences(STUDENT_ID, preference))
+                .thenThrow(new RuntimeException("Preference not found for studentId " + STUDENT_ID));
+
+        // Act + Assert
+        assertThrows(RuntimeException.class,
+                () -> apiController.updateStudentStudyPreferences(VALID_KEY, STUDENT_ID, preference));
+    }
+
+    // ---------- GET /api/{id} : getStudentStudyPreferences ----------
+
+    @Test
+    void getStudentStudyPreferencesWithInvalidApiKeyReturnsUnauthorized() throws Exception {
+        // Arrange
+        when(studyMateApiService.validateApiKey(INVALID_KEY)).thenReturn(false);
+
+        // Act
+        ResponseEntity<Preference> response =
+                apiController.getStudentStudyPreferences(INVALID_KEY, STUDENT_ID);
+
+        // Assert
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        verify(preferenceService, never()).getStudentStudyPreferences(anyLong());
+    }
+
+    @Test
+    void getStudentStudyPreferencesSuccessReturnsOk() throws Exception {
+        // Arrange
+        preference.setId(STUDENT_ID);
+        when(studyMateApiService.validateApiKey(VALID_KEY)).thenReturn(true);
+        when(preferenceService.getStudentStudyPreferences(STUDENT_ID)).thenReturn(preference);
+
+        // Act
+        ResponseEntity<Preference> response =
+                apiController.getStudentStudyPreferences(VALID_KEY, STUDENT_ID);
+
+        // Assert
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(preference);
+        verify(preferenceService).getStudentStudyPreferences(STUDENT_ID);
+    }
+
+    @Test
+    void getStudentStudyPreferencesWithNonExistentPreferenceThrows() {
+        // Arrange
+        when(studyMateApiService.validateApiKey(VALID_KEY)).thenReturn(true);
+        when(preferenceService.getStudentStudyPreferences(STUDENT_ID))
+                .thenThrow(new RuntimeException("Preference not found for studentId " + STUDENT_ID));
+
+        // Act + Assert
+        assertThrows(RuntimeException.class,
+                () -> apiController.getStudentStudyPreferences(VALID_KEY, STUDENT_ID));
+    }
+
+
 }
