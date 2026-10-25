@@ -117,6 +117,46 @@ Adds a student to a study group.
 | **Call-order dependency** | The student and group must already exist (via registration/creation). `findCompatibleStudyGroups` does **not** need to have been called first — the match result is only a recommendation. |
 | **Idempotent?** | Yes — calling it again for a student who is already a member returns `200 OK` with the current (unchanged) group instead of erroring or double-adding the member. |
 
+### `POST /api/`
+Registers a study preference for an existing student.
+
+| | |
+|---|---|
+| **Headers** | `X-API-KEY: <api key>`, `Content-Type: application/json` |
+| **Body** | JSON `Preference`. `id` must be the `id` of an existing student (the preference shares the student's primary key). Example:<br>`{"id": 1, "course": "COMS4156", "meetingMode": "in-person", "preferredGroupSize": 4, "studyStyles": ["collaborative", "focused"], "availableTimes": [{"day": "MONDAY", "startTime": "14:00", "endTime": "16:00"}]}` |
+| **Success** | `201 Created` — JSON `Preference` object as saved. The linked `student` is not included in the response. |
+| **Errors** | `401 Unauthorized` — API key is invalid.<br>`400 Bad Request` — missing `X-API-KEY` header or malformed JSON (e.g. an invalid `day` value).<br>`500 Internal Server Error` — no student exists with the given `id` (the service throws a `RuntimeException`, not yet mapped to `404`). |
+| **Side effects** | Inserts a row into `study_preferences`, plus one row per entry in `preference_available_times` and `preference_study_styles`. If the student already has a preference, it is replaced. |
+| **Call-order dependency** | The student must already exist. Must be called before `GET /api/find` for that student, which returns `400` when no preference is registered. |
+| **Idempotent?** | Yes, in effect — repeating the same request leaves the same single preference for that student, since the student's id is the primary key. |
+
+### `PUT /api/{id}`
+Updates an existing student's study preference.
+
+| | |
+|---|---|
+| **Headers** | `X-API-KEY: <api key>`, `Content-Type: application/json` |
+| **Path param** | `id` (Long, required) — the student's `id`, which is also the preference's primary key. |
+| **Body** | JSON `Preference` with the new values (same shape as `POST /api/`). The body's `id` is ignored; the path `id` decides which preference is updated. |
+| **Success** | `200 OK` — JSON `Preference` object reflecting the updated values. |
+| **Errors** | `401 Unauthorized` — API key is invalid.<br>`400 Bad Request` — missing `X-API-KEY` header, non-numeric `id`, or malformed JSON.<br>`500 Internal Server Error` — no preference exists for `id` (the service throws a `RuntimeException`, not yet mapped to `404`). |
+| **Side effects** | Overwrites `course`, `availableTimes`, `studyStyles`, `preferredGroupSize` and `meetingMode` for that preference. The `availableTimes` and `studyStyles` lists are replaced entirely, not merged. The student link and `id` never change. |
+| **Call-order dependency** | The preference must already exist (created via `POST /api/`). |
+| **Idempotent?** | Yes — sending the same body again results in the same stored preference. |
+
+### `GET /api/{id}`
+Retrieves a student's registered study preference.
+
+| | |
+|---|---|
+| **Headers** | `X-API-KEY: <api key>` |
+| **Path param** | `id` (Long, required) — the student's `id`. |
+| **Success** | `200 OK` — JSON `Preference` object for that student. |
+| **Errors** | `401 Unauthorized` — API key is invalid.<br>`400 Bad Request` — missing `X-API-KEY` header or non-numeric `id`.<br>`500 Internal Server Error` — no preference exists for `id` (the service throws a `RuntimeException`, not yet mapped to `404`). |
+| **Side effects** | None — read-only. |
+| **Call-order dependency** | The preference must already exist (created via `POST /api/`). |
+| **Idempotent?** | Yes — returns the current stored preference every call. |
+
 ---
 
 ## 4. Example Usage Scenarios
