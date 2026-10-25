@@ -17,7 +17,7 @@ StudyMate is a REST API that helps students at the same school/course find and j
 > Task tracking: GitHub Issues / GitHub Projects on the repository above.
 > *(Add the direct Project board URL here and confirm the Mentor/Instructor have been given access.)*
 
-> **Scope note:** this README section documents Hyunwoo Kang's component (Find Compatible Study Groups, Join Study Group) on the `harry/matching` branch, whose changes are now merged from `main` into `creategroups`. All numbers below (test counts, coverage, Checkstyle/PMD results) reflect this branch in isolation and will be regenerated after the team's branches are merged.
+> **Scope note:** this README section documents Hyunwoo Kang's component (Find Compatible Study Groups, Join Study Group) on the `harry/matching` branch, whose changes are now merged from `main` into `creategroups`. The original component-specific figures below are historical. Current merged verification results are in [reports/api-testing.md](reports/api-testing.md).
 
 ---
 
@@ -199,7 +199,7 @@ This loads the sample fixture data in `src/test/resources/local-seed.sql` (2 stu
 cd study-mate
 ./mvnw test
 ```
-Runs all JUnit 5 tests via the Maven Surefire plugin (26 tests across 5 test classes). No arguments or manual setup required — Spring profiles point the test run at an in-memory H2 database automatically (`src/test/resources/application.properties`).
+Runs all JUnit Jupiter tests via Maven Surefire. The merged verification run includes 141 tests across 9 test classes; see [reports/api-testing.md](reports/api-testing.md). No arguments or manual setup required — Spring profiles point the test run at an in-memory H2 database automatically (`src/test/resources/application.properties`).
 
 ### Run the API tests (cURL)
 ```bash
@@ -441,7 +441,7 @@ BUILD SUCCESS
 
 Plus the manual cURL verification against the live Supabase Postgres instance in Section 7: **9/9 cases matched** the documented contract in Section 3, including confirming `/api/join` durably persists membership changes (checked independently via `psql`, not just the HTTP response).
 
-**These numbers are branch-local.** They have not yet been combined with Kevin Chuang's, Hyunwoo Kim's, Ugorji Benjamin Barrah's, or Ziyue Fang's work (Register Student, Create Study Group, Register/Update Study Preference, Leave Study Group respectively) — that merge, and the corresponding re-run of `./mvnw verify` on `main`, is the next step before submission.
+**The matching/join figures above are historical component-only results.** Current `creategroups` also includes group creation and the live API suite. See [reports/api-testing.md](reports/api-testing.md) for the merged verification results.
 
 ## Study group creation request
 
@@ -555,3 +555,55 @@ To run only group-creation tests:
 After `verify`, test results are in `study-mate/target/surefire-reports/` and
 the JaCoCo coverage report is at `study-mate/target/site/jacoco/index.html`.
 These generated directories are ignored by Git.
+
+## Live HTTP API testing
+
+`study-mate/src/test/java/com/studymate/api/LiveStudyMateApiTests.java` uses JUnit
+Jupiter and Java 17's `HttpClient` as the API test runner and HTTP client. It starts
+the full Spring Boot application on a random loopback port, sends real HTTP
+requests, and uses real services and repositories. No services or repositories
+are mocked in this suite.
+
+From `study-mate/`, run:
+
+```sh
+./mvnw -Dtest=LiveStudyMateApiTests test
+```
+
+The suite also runs as part of `./mvnw verify`. Java 17 and a local TCP port are
+required; PostgreSQL, API credentials, and a separately started server are not.
+Maven downloads dependencies on the first run as usual.
+
+The test-only `api` profile is configured in
+`study-mate/src/test/resources/application-api.properties`. It uses an isolated
+in-memory H2 database and binds the server to `127.0.0.1`. `NON_KEYWORDS=DAY,YEAR`
+allows the existing entity column names, and Hibernate is configured to fail
+startup on schema errors. This does not alter production PostgreSQL settings.
+
+Every test resets the isolated database and commits its prerequisite student
+records before sending requests. Preference scenarios also seed prerequisite
+preferences through the repository because preference creation is incomplete.
+Assertions reload saved data in separate transactions after HTTP responses;
+requests are not wrapped in a test transaction that could hide missing commits.
+Tests run independently and require no manual student-ID configuration.
+
+| Endpoint | Live scenarios |
+| --- | --- |
+| `GET /api/health` | Response status and health message. |
+| `POST /api/groups` | Success and committed collections; repeated submissions; missing/blank/unknown keys; unknown creator; invalid values, JSON, and server-controlled fields; unsupported content type; rejected requests save no group. |
+| `GET /api/{id}` | Retrieve a seeded preference and read it again after an update. |
+| `PUT /api/{id}` | Update preferences and confirm values were committed. |
+| `GET /api/find` | Discover a newly created group; reject missing students/preferences; return empty results; rank the top three; exclude different school/course/mode, closed, and full groups. |
+
+The suite verifies H2 persistence, not PostgreSQL compatibility. API keys are
+validated against registered students; fixtures include a registered key, and
+live tests reject unknown keys. Matching uses `GET /api/find?studentId={id}`.
+The key check does not establish ownership of the requested student record.
+
+`POST /api/` (initial preference creation) remains outside this acceptance suite
+because it does not attach the required student. Joining is now implemented as
+`POST /api/join` on main and has its own unit tests and cURL suite described above.
+The live suite here focuses on creation, preferences, and matching.
+
+Results are generated under `study-mate/target/surefire-reports/`. A checked-in
+run summary and limitations are recorded in [reports/api-testing.md](reports/api-testing.md).
