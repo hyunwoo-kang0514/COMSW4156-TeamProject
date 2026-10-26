@@ -6,6 +6,7 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 
+/** Request body for POST /api/groups; server-controlled fields are rejected. */
 @Getter
 @Setter
 public class CreateStudyGroupRequest {

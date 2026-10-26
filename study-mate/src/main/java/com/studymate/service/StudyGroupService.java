@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/** Creates study groups and manages their membership (join and leave). */
 @Service
 public class StudyGroupService {
 
@@ -37,15 +38,15 @@ public class StudyGroupService {
    */
   @Transactional
   public StudyGroup createStudyGroup(CreateStudyGroupRequest request) {
-    if (request == null || request.getCreatorStudentId() == null
+    if (request == null
+        || request.getCreatorStudentId() == null
         || request.getCreatorStudentId() <= 0) {
       throw new IllegalArgumentException("A positive creatorStudentId is required.");
     }
 
     Student creator = studentService.findStudentById(request.getCreatorStudentId());
     if (creator == null) {
-      throw new NoSuchElementException(
-          "Student not found for ID " + request.getCreatorStudentId());
+      throw new NoSuchElementException("Student not found for ID " + request.getCreatorStudentId());
     }
 
     requireText(creator.getSchool(), "Creator school");
@@ -55,8 +56,7 @@ public class StudyGroupService {
     }
     String meetingMode = requireText(request.getMeetingMode(), "meetingMode");
     if (!Set.of("IN_PERSON", "ONLINE", "HYBRID").contains(meetingMode)) {
-      throw new IllegalArgumentException(
-          "meetingMode must be IN_PERSON, ONLINE, or HYBRID.");
+      throw new IllegalArgumentException("meetingMode must be IN_PERSON, ONLINE, or HYBRID.");
     }
 
     StudyGroup group = new StudyGroup();
@@ -86,7 +86,9 @@ public class StudyGroupService {
     }
     List<TimeSlot> copies = new ArrayList<>();
     for (TimeSlot schedule : schedules) {
-      if (schedule == null || schedule.getDay() == null || schedule.getStartTime() == null
+      if (schedule == null
+          || schedule.getDay() == null
+          || schedule.getStartTime() == null
           || schedule.getEndTime() == null
           || !schedule.getStartTime().isBefore(schedule.getEndTime())) {
         throw new IllegalArgumentException(
@@ -147,32 +149,32 @@ public class StudyGroupService {
   }
 
   /**
-   * Get all groups that exist in the database
+   * Get all groups that exist in the database.
+   *
    * @return all groups that exist
    */
   public List<StudyGroup> getAllStudyGroups() {
     return studyGroupRepository.findAll();
   }
 
-  /**
-   * Get all candidate groups from the database
-   */
+  /** Get all recruiting groups with the given school, course, and meeting mode. */
   public List<StudyGroup> getCandidateGroups(String school, String course, String mode) {
     return studyGroupRepository.findCandidateGroups(school, course, mode);
   }
 
   /**
-   * Find study group by id
+   * Find study group by id.
    *
-   * @param groupId id of the student
-   * @return corresponding Student object, return null if DNE
+   * @param groupId id of the study group
+   * @return corresponding StudyGroup object, or null if it does not exist
    */
   public StudyGroup findStudyGroupById(Long groupId) {
     return studyGroupRepository.findById(groupId).orElse(null);
   }
 
   /**
-   * Check whether a student is in the group
+   * Check whether a student is in the group.
+   *
    * @param student instance of student
    * @param studyGroup instance of study group
    * @return True if already member, false otherwise
@@ -190,7 +192,8 @@ public class StudyGroupService {
   }
 
   /**
-   * Check availability of the group
+   * Check availability of the group.
+   *
    * @param studyGroup instance of the study group
    * @return True if can join, false otherwise
    */
@@ -199,15 +202,44 @@ public class StudyGroupService {
   }
 
   /**
-   * Join a student to a group
+   * Join a student to a group.
+   *
    * @param student instance of the student
    * @param studyGroup instance of study group
+   * @return the saved group with the student added
    */
   public StudyGroup joinGroup(Student student, StudyGroup studyGroup) {
     List<String> newMemberIds = studyGroup.getMemberIds();
     newMemberIds.add(student.getStudentId());
     studyGroup.setMemberIds(newMemberIds);
     studyGroup.setNumMembers(studyGroup.getNumMembers() + 1);
+    return studyGroupRepository.save(studyGroup);
+  }
+
+  /**
+   * Remove a student from a group and persist the change. Every occurrence of the student's id is
+   * removed from memberIds (guards against duplicate rows left by older data), and numMembers is
+   * decremented by the number of ids removed, never going below zero. The group itself is kept even
+   * if it becomes empty, and its isRecruiting flag is left unchanged. The caller is expected to
+   * check isMember() first; if the student is not a member this method changes nothing and does not
+   * touch the database. AI-generated (Claude Code), reviewed by Ziyue Fang. See README "AI
+   * Documentation".
+   *
+   * @param student instance of the student leaving
+   * @param studyGroup instance of the study group
+   * @return the saved group reflecting the updated membership
+   */
+  @Transactional
+  public StudyGroup leaveGroup(Student student, StudyGroup studyGroup) {
+    List<String> memberIds = studyGroup.getMemberIds();
+    int sizeBefore = memberIds.size();
+    memberIds.removeIf(member -> member.equals(student.getStudentId()));
+    int removed = sizeBefore - memberIds.size();
+    if (removed == 0) {
+      return studyGroup;
+    }
+    studyGroup.setMemberIds(memberIds);
+    studyGroup.setNumMembers(Math.max(0, studyGroup.getNumMembers() - removed));
     return studyGroupRepository.save(studyGroup);
   }
 }

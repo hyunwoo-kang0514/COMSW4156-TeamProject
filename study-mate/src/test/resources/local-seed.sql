@@ -37,3 +37,9 @@ INSERT INTO study_group_study_styles (study_group_group_id, study_styles) VALUES
   (1, 'collaborative'),
   (1, 'focused'),
   (2, 'independent');
+
+-- The rows above use explicit ids, which does not advance the identity counters.
+-- Restart them past the seeded ids so POST /api/students and POST /api/groups
+-- can insert new rows without a primary-key collision.
+ALTER TABLE student ALTER COLUMN id RESTART WITH 3;
+ALTER TABLE study_group ALTER COLUMN group_id RESTART WITH 3;

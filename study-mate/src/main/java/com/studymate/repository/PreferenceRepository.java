@@ -1,7 +1,7 @@
 package com.studymate.repository;
-import org.springframework.data.jpa.repository.JpaRepository;
+
 import com.studymate.domain.Preference;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-
-public interface PreferenceRepository extends JpaRepository<Preference, Long>{
-}
+/** JPA repository for student study {@link Preference} records. */
+public interface PreferenceRepository extends JpaRepository<Preference, Long> {}

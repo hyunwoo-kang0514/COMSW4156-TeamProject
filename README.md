@@ -14,10 +14,7 @@ StudyMate is a REST API that helps students at the same school/course find and j
 | Ugorji Benjamin Barrah | ubb2000 | Register/Update Study Preference |
 | Ziyue Fang | zf2389 | Leave Study Group |
 
-> Task tracking: GitHub Issues / GitHub Projects on the repository above.
-> *(Add the direct Project board URL here and confirm the Mentor/Instructor have been given access.)*
-
-> **Scope note:** this README section documents Hyunwoo Kang's component (Find Compatible Study Groups, Join Study Group) on the `harry/matching` branch, whose changes are now merged from `main` into `creategroups`. The original component-specific figures below are historical. Current merged verification results are in [reports/api-testing.md](reports/api-testing.md).
+Task tracking: see [Section 11](#11-project-management).
 
 ---
 
@@ -28,7 +25,7 @@ The project uses:
 - Java 17
 - Spring Boot 4.1.1 (Spring Web, Spring Data JPA, Hibernate 7.4.5)
 - Apache Maven 3.10.0 (via the `mvnw`/`mvnw.cmd` wrapper — no local Maven install required)
-- Checkstyle 3.6.0 (ruleset: `google_checks.xml`)
+- Checkstyle 9.3 via `maven-checkstyle-plugin` 3.6.0 (ruleset: `google_checks.xml`)
 - PMD 7.17.0 (via `maven-pmd-plugin` 3.28.0)
 - JaCoCo 0.8.14
 - JUnit 5, Mockito, AssertJ (test scope)
@@ -43,6 +40,10 @@ Maven: Apache Maven 3.10.0
 OS:    macOS 14.5 (aarch64)
 ```
 
+> **JDK 23 or newer:** those JDKs turn off implicit annotation processing, so Lombok does not run and
+> compilation fails with `cannot find symbol` errors on getters/setters. Build with JDK 17–22 (CI
+> uses Temurin 17).
+
 The Maven configuration in `study-mate/pom.xml` targets Java 17. All Maven commands below are run from the `study-mate` directory:
 
 ```bash
@@ -53,19 +54,24 @@ cd study-mate
 
 ## 1. Implementation Status (this iteration / MVP)
 
-The proposal specifies six operations. This iteration focuses on a vertical slice that is fully implemented, tested, and demoable end-to-end against the real database:
+All six operations from the proposal are implemented, unit-tested, and API-tested in this iteration:
 
-| Endpoint | Method & Path | Status |
+| Operation | Method & Path | Owner |
 |---|---|---|
-| Health check | `GET /api/health` | ✅ Implemented |
-| Find Compatible Study Groups | `GET /api/find` | ✅ Implemented, unit-tested, API-tested |
-| Join Study Group | `POST /api/join` | ✅ Implemented, unit-tested, API-tested |
-| Register Student | — | 🚧 Planned (owner: Kevin Chuang) |
-| Register/Update Study Preference | — | 🚧 Planned (owner: Ugorji Benjamin Barrah) |
-| Create Study Group | `POST /api/groups` | Implemented with validation, unit tests, and MockMvc tests |
-| Leave Study Group | — | 🚧 Planned (owner: Ziyue Fang) |
+| Health check | `GET /api/health` | — |
+| Register Student | `POST /api/students` | Kevin Chuang |
+| Register Study Preference | `POST /api/` | Ugorji Benjamin Barrah |
+| Update / Get Study Preference | `PUT /api/{id}`, `GET /api/{id}` | Ugorji Benjamin Barrah |
+| Create Study Group | `POST /api/groups` | Hyunwoo Kim |
+| Find Compatible Study Groups | `GET /api/find?studentId={id}` | Hyunwoo Kang |
+| Join Study Group | `POST /api/join` | Hyunwoo Kang |
+| Leave Study Group | `POST /api/leave` | Ziyue Fang |
 
-This matches the assignment's MVP requirement: "as many as possible of the API entry points should be operational and demoable" rather than all proposed functionality.
+Known limitations in this iteration:
+
+- `meetingMode` is compared as an exact, case-sensitive string when matching. `POST /api/groups` only accepts `IN_PERSON`, `ONLINE`, or `HYBRID`, while preferences accept any string, so a preference must use one of those three exact values to match groups created through the API.
+- The API key proves the caller is *a* registered student. Only `POST /api/leave` also checks that the key belongs to the student named in the request; the other endpoints do not check ownership.
+- `POST /api/` and `PUT /api/{id}` are mounted directly under `/api`; they will move to a `/api/preferences` path in the next iteration.
 
 ---
 
@@ -82,86 +88,214 @@ The following business-logic changes were made after the proposal was submitted 
 
 ## 3. API Reference
 
-All endpoints are under the base path `/api` and require the `X-API-KEY` header (except `/health`). The API key is validated against a registered student's `apiKey` column.
+All endpoints are under `/api` and return JSON unless noted. Every endpoint except `GET /api/health` and `POST /api/students` requires an `X-API-KEY` header, which is checked against the `apiKey` of a registered student. You get a key by registering (`POST /api/students`).
+
+**Errors common to every authenticated endpoint:**
+
+| Status | When |
+|---|---|
+| `401 Unauthorized` | `X-API-KEY` does not match any registered student. For `POST /api/groups`, also when the header is missing or blank. |
+| `400 Bad Request` | The `X-API-KEY` header is missing (all endpoints except `POST /api/groups`), the JSON body is malformed, a field has the wrong type (for example a non-numeric path id or an invalid `day`), or a required primitive such as `preferredGroupSize` is missing. Spring returns its default error JSON for these. |
+| `415 Unsupported Media Type` | A JSON endpoint is called without `Content-Type: application/json`. |
+| `500 Internal Server Error` | Unexpected server or database failure. |
 
 ### `GET /api/health`
 Liveness check.
-- **Input:** none
-- **Output:** `200 OK`, body: `StudyMate API is running`
-
-### `GET /api/find?studentId={id}`
-Finds up to the top 3 study groups compatible with the student's registered preference.
 
 | | |
 |---|---|
-| **Headers** | `X-API-KEY: <api key>` |
-| **Query param** | `studentId` (Long, required) |
-| **Success** | `200 OK` — JSON array of up to 3 `StudyGroup` objects, ranked by compatibility score. Empty array `[]` if no compatible group exists. |
-| **Errors** | `401 Unauthorized` — API key is invalid/unknown.<br>`404 Not Found` — no student with that `studentId`.<br>`400 Bad Request` — student exists but has not registered a study preference. |
-| **Side effects** | None — read-only. Does not modify student or group records. |
-| **Call-order dependency** | The student must already have a registered `Preference` (via the not-yet-implemented `registerPreference`, or inserted directly for this iteration's testing). Study groups must already exist for a non-empty result. |
-| **Idempotent?** | Yes — recomputes from current data every call. |
+| **Headers** | none |
+| **Success** | `200 OK`, plain-text body `StudyMate API is running` |
+| **Side effects** | None. |
 
-Compatibility scoring: same school/course (+10/25 depending on size match), overlapping availability (+15–30), shared study style (+20–25), same meeting mode (filter, required). See `MatchingService.getScores()`.
-
-### `POST /api/join`
-Adds a student to a study group.
+### `POST /api/students` — Register Student
+Registers a new student and generates their API key.
 
 | | |
 |---|---|
-| **Headers** | `X-API-KEY: <api key>`, `Content-Type: application/json` |
-| **Body** | `{"studentId": <Long>, "groupId": <Long>}` |
-| **Success** | `200 OK` — JSON `StudyGroup` object reflecting the updated membership (or the unchanged group if the student was already a member). |
-| **Errors** | `401 Unauthorized` — API key is invalid.<br>`400 Bad Request` — student or group does not exist, or the group has no remaining capacity (`numMembers >= maxMembers` or not recruiting). |
-| **Side effects** | On success, the student's ID is appended to the group's `memberIds` and `numMembers` is incremented; the change is persisted to the database (`StudyGroupRepository.save`). |
-| **Call-order dependency** | The student and group must already exist (via registration/creation). `findCompatibleStudyGroups` does **not** need to have been called first — the match result is only a recommendation. |
-| **Idempotent?** | Yes — calling it again for a student who is already a member returns `200 OK` with the current (unchanged) group instead of erroring or double-adding the member. |
+| **Headers** | `Content-Type: application/json` (no API key) |
+| **Body** | `{"studentId": "ab1234", "name": "Alex", "email": "alex@example.com", "school": "Columbia", "major": "Computer Science", "year": 3}` — every string must be non-blank and `year` must be ≥ 1. |
+| **Success** | `201 Created` — `{"id": 3, "studentId": "ab1234", "name": "Alex", "email": "...", "school": "Columbia", "major": "Computer Science", "year": 3, "apiKey": "f376fee4-..."}`. `id` is the numeric database id used by every other endpoint; `apiKey` is a random UUID. |
+| **Errors** | `400` — a required field is missing/blank or `year` ≤ 0 (plain-text body `Invalid student information`).<br>`409 Conflict` — `studentId` is already registered (plain-text body `Student ID already registered`). |
+| **Side effects** | Inserts one `student` row with a unique API key. |
+| **Call order** | First call for any new student. Nothing else can be called on their behalf until they have a key. |
+| **Idempotent?** | No — a repeat returns `409` and creates nothing. |
+
+### `POST /api/` — Register Study Preference
+Registers (or replaces) the study preference of an existing student.
+
+| | |
+|---|---|
+| **Headers** | `X-API-KEY`, `Content-Type: application/json` |
+| **Body** | `{"id": 3, "course": "COMS4156", "meetingMode": "IN_PERSON", "preferredGroupSize": 4, "studyStyles": ["collaborative", "focused"], "availableTimes": [{"day": "MONDAY", "startTime": "14:00", "endTime": "16:00"}]}` — `id` is the student's database `id`; the preference shares that primary key. `day` is a `java.time.DayOfWeek` name. |
+| **Success** | `201 Created` — the saved preference (the linked student is not included). |
+| **Errors** | `400` — body has no `id` (empty body), plus the common errors.<br>`404 Not Found` — no student with that `id` (empty body). |
+| **Side effects** | Inserts or replaces the row in `preference` and its rows in `preference_available_times` and `preference_study_styles`. A student has at most one preference. |
+| **Call order** | After `POST /api/students`. Must happen before `GET /api/find` for that student. |
+| **Idempotent?** | Yes, in effect — repeating the request leaves the same single preference. |
+
+### `PUT /api/{id}` — Update Study Preference
+
+| | |
+|---|---|
+| **Headers** | `X-API-KEY`, `Content-Type: application/json` |
+| **Path** | `id` — the student's database `id` |
+| **Body** | Same shape as `POST /api/`. The body's `id` is ignored; the path decides which preference is updated. |
+| **Success** | `200 OK` — the updated preference. |
+| **Errors** | `404` — no preference (or no student) exists for `id`, plus the common errors. |
+| **Side effects** | Overwrites `course`, `meetingMode`, `preferredGroupSize`, `studyStyles`, and `availableTimes`. The lists are replaced entirely, not merged. |
+| **Call order** | After `POST /api/` for that student. |
+| **Idempotent?** | Yes. |
+
+### `GET /api/{id}` — Get Study Preference
+
+| | |
+|---|---|
+| **Headers** | `X-API-KEY` |
+| **Path** | `id` — the student's database `id` |
+| **Success** | `200 OK` — the stored preference. |
+| **Errors** | `404` — no preference exists for `id`, plus the common errors. |
+| **Side effects** | None — read-only. |
+| **Call order** | After `POST /api/` for that student. |
+
+### `POST /api/groups` — Create Study Group
+Creates a study group with the creator as its first member.
+
+| | |
+|---|---|
+| **Headers** | `X-API-KEY`, `Content-Type: application/json` |
+| **Body** | `{"creatorStudentId": 3, "name": "Alex Study Group", "course": "COMS4156", "maxMembers": 3, "schedules": [{"day": "MONDAY", "startTime": "14:00", "endTime": "16:00"}], "studyStyles": ["collaborative"], "meetingMode": "IN_PERSON"}` |
+| **Validation** | The creator must exist and have a school and `studentId`. `name` and `course` are non-blank; `maxMembers` ≥ 2; at least one schedule, each starting before it ends and not overlapping another on the same day (back-to-back slots are fine); at least one non-blank, unique study style; `meetingMode` is `IN_PERSON`, `ONLINE`, or `HYBRID`. Any other top-level field — including server-controlled ones like `groupId`, `school`, `memberIds`, `numMembers`, `isRecruiting`/`recruiting`, or a misspelling — is rejected, even when `null`. |
+| **Success** | `200 OK` — the saved group, e.g. `{"groupId": 3, "name": "Alex Study Group", "school": "Columbia", "course": "COMS4156", "memberIds": ["ab1234"], "numMembers": 1, "maxMembers": 3, "recruiting": true, ...}`. |
+| **Errors** | `400` — a validation rule failed (`{"error": "maxMembers must be at least 2."}`), or an unknown/forbidden field was sent (Spring error JSON).<br>`401` — key missing, blank, or unknown.<br>`404` — no student with `creatorStudentId` (`{"error": "Student not found for ID 999"}`). |
+| **Side effects** | Inserts one group in a transaction. The server copies the creator's school, adds the creator's `studentId` as the only member, sets `numMembers` to 1, and opens recruiting. Nothing is saved on any error. |
+| **Call order** | The creator must be registered first. |
+| **Idempotent?** | No — every valid call creates a separate group. |
+
+Spring parses the body before the controller runs, so malformed JSON returns `400` before the API key is checked.
+
+### `GET /api/find?studentId={id}` — Find Compatible Study Groups
+Returns up to three compatible groups, best match first.
+
+| | |
+|---|---|
+| **Headers** | `X-API-KEY` |
+| **Query** | `studentId` — the student's database `id` (required) |
+| **Success** | `200 OK` — JSON array of up to 3 groups, or `[]` if nothing matches. |
+| **Errors** | `404` — no student with that id.<br>`400` — the student has no preference, or `studentId` is missing; plus the common errors. |
+| **Side effects** | None — read-only. |
+| **Call order** | The student needs a preference (`POST /api/`). Groups must exist (`POST /api/groups`) for a non-empty result. |
+| **Idempotent?** | Yes — recomputed from current data on every call. |
+
+**How matching works** (`MatchingService`): candidates are recruiting groups with the same school as the student and the same `course` and `meetingMode` as the preference; full groups are skipped. Each candidate is scored out of 80: group size (25 if `maxMembers` equals the preferred size, 20 if within ±1), study styles (25 if every preferred style is shared, 20 if at least one is), and weekly time overlap (30 for ≥ 120 min, 25 for ≥ 60 min, 15 for any overlap). The top three by score are returned.
+
+### `POST /api/join` — Join Study Group
+
+| | |
+|---|---|
+| **Headers** | `X-API-KEY`, `Content-Type: application/json` |
+| **Body** | `{"studentId": 1, "groupId": 3}` — `studentId` is the database `id` |
+| **Success** | `200 OK` — the group with the student added (or unchanged if they were already a member). |
+| **Errors** | `400` — the student or group does not exist, or the group is full (`numMembers >= maxMembers`) or not recruiting; plus the common errors. |
+| **Side effects** | Appends the student's `studentId` to `memberIds`, increments `numMembers`, and saves the group. |
+| **Call order** | Student and group must exist. `GET /api/find` does **not** need to be called first — its result is only a recommendation. |
+| **Idempotent?** | Yes — joining again returns `200` with the unchanged group and never adds the member twice. |
+
+### `POST /api/leave` — Leave Study Group
+
+| | |
+|---|---|
+| **Headers** | `X-API-KEY`, `Content-Type: application/json` |
+| **Body** | `{"studentId": 1, "groupId": 3}` — `studentId` is the database `id` |
+| **Success** | `200 OK` — the group with the student removed (or unchanged if they were not a member). |
+| **Errors** | `400` — body missing, or `studentId`/`groupId` missing.<br>`401` — unknown key.<br>`403 Forbidden` — the key is valid but belongs to a different student; a student can only remove themselves.<br>`404` — no such student or group. |
+| **Check order** | `401` (key) → `400` (body) → `404` (lookup) → `403` (key owner) → membership check. Nothing changes unless every check passes. |
+| **Side effects** | Removes every occurrence of the student's `studentId` from `memberIds`, decrements `numMembers` by the number removed (never below 0), and saves in one transaction. The group is kept when its last member leaves, and `isRecruiting` is unchanged. |
+| **Call order** | Student and group must exist; for anything to change the student must have joined first. |
+| **Idempotent?** | Yes — leaving again returns `200` and does not write to the database, so a retry after a lost response is safe. |
 
 ---
 
 ## 4. Example Usage Scenarios
 
-**Correct usage — find then join:**
-```bash
-# 1. Student looks up compatible groups
-curl -X GET "http://localhost:8081/api/find?studentId=1" -H "X-API-KEY: test-key-1"
-# -> 200, [{ "groupId": 1, "name": "COMS4156 Study Group", ... }]
+These were run against the local H2 instance from [Section 5](#run-locally-without-a-postgres-connection-h2-for-quick-manual-testing) on port 8081. The seed data provides students `1` (`hk3382`, key `test-key-1`, has a preference) and `2` (`nopref1`, key `test-key-2`, no preference), plus group `1` (room left) and group `2` (full). Responses are shortened.
 
-# 2. Student joins the recommended group
-curl -X POST "http://localhost:8081/api/join" \
-  -H "X-API-KEY: test-key-1" -H "Content-Type: application/json" \
-  -d '{"studentId":1,"groupId":1}'
-# -> 200, group JSON with the student added to memberIds
+**Scenario 1 — a new student from registration to leaving a group:**
+```bash
+# 1. Register. Save "id" and "apiKey" from the response.
+curl -X POST http://localhost:8081/api/students -H "Content-Type: application/json" \
+  -d '{"studentId":"ab1234","name":"Alex","email":"alex@example.com","school":"Columbia","major":"Computer Science","year":3}'
+# -> 201 {"id":3,"studentId":"ab1234",...,"apiKey":"f376fee4-..."}
+KEY=f376fee4-...   # the apiKey you received
+
+# 2. Register a study preference (id = the student's database id)
+curl -X POST http://localhost:8081/api/ -H "X-API-KEY: $KEY" -H "Content-Type: application/json" \
+  -d '{"id":3,"course":"COMS4156","meetingMode":"IN_PERSON","preferredGroupSize":3,"studyStyles":["collaborative"],"availableTimes":[{"day":"MONDAY","startTime":"13:00","endTime":"16:00"}]}'
+# -> 201 {"id":3,"course":"COMS4156","meetingMode":"IN_PERSON",...}
+
+# 3. Create a group; the creator becomes its first member
+curl -X POST http://localhost:8081/api/groups -H "X-API-KEY: $KEY" -H "Content-Type: application/json" \
+  -d '{"creatorStudentId":3,"name":"Alex Study Group","course":"COMS4156","maxMembers":3,"schedules":[{"day":"MONDAY","startTime":"14:00","endTime":"16:00"}],"studyStyles":["collaborative"],"meetingMode":"IN_PERSON"}'
+# -> 200 {"groupId":3,"memberIds":["ab1234"],"numMembers":1,"recruiting":true,...}
+
+# 4. Find compatible groups
+curl "http://localhost:8081/api/find?studentId=3" -H "X-API-KEY: $KEY"
+# -> 200 [{"groupId":3,"name":"Alex Study Group",...}]
 ```
 
-**Correct usage — joining a group that wasn't a recommended match:**
+**Scenario 2 — another student joins, retries, and leaves:**
 ```bash
-curl -X POST "http://localhost:8081/api/join" \
-  -H "X-API-KEY: test-key-1" -H "Content-Type: application/json" \
-  -d '{"studentId":1,"groupId":5}'
-# -> 200, as long as group 5 exists, student 1 is not already a member,
-#    and group 5 has capacity. (Per Proposal Update #3, group 5 did not
-#    need to appear in student 1's /api/find results first.)
+curl -X POST http://localhost:8081/api/join -H "X-API-KEY: test-key-1" -H "Content-Type: application/json" \
+  -d '{"studentId":1,"groupId":3}'
+# -> 200 {"groupId":3,"memberIds":["ab1234","hk3382"],"numMembers":2,...}
+
+# Same call again: idempotent, member is not added twice
+# -> 200 {"memberIds":["ab1234","hk3382"],"numMembers":2,...}
+
+curl -X POST http://localhost:8081/api/leave -H "X-API-KEY: test-key-1" -H "Content-Type: application/json" \
+  -d '{"studentId":1,"groupId":3}'
+# -> 200 {"memberIds":["ab1234"],"numMembers":1,...}
+```
+Group 3 did not have to appear in student 1's `/api/find` results first (Proposal Update #3).
+
+**Scenario 3 — update and read back a preference:**
+```bash
+curl -X PUT http://localhost:8081/api/3 -H "X-API-KEY: $KEY" -H "Content-Type: application/json" \
+  -d '{"course":"COMS4156","meetingMode":"IN_PERSON","preferredGroupSize":4,"studyStyles":["collaborative","focused"],"availableTimes":[{"day":"MONDAY","startTime":"14:00","endTime":"16:00"}]}'
+# -> 200, lists replaced with the new values
+curl http://localhost:8081/api/3 -H "X-API-KEY: $KEY"
+# -> 200, same preference
 ```
 
 **Contrived bad usage (and why it fails):**
 
 | Call | Result | Why |
 |---|---|---|
-| `GET /api/find?studentId=1` with no/invalid `X-API-KEY` header | `401` | API key doesn't match any registered student. |
-| `GET /api/find?studentId=99999` (nonexistent student) | `404` | No student row with that ID. |
-| `GET /api/find?studentId=2` where student 2 has no `Preference` row | `400` | `findCompatibleStudyGroups` requires a registered preference; there is nothing to match against. |
-| `POST /api/join` with `groupId` for a group at `numMembers == maxMembers` | `400` | `StudyGroupService.canJoin()` rejects — no capacity left. |
-| `POST /api/join` with a `groupId` that doesn't exist | `400` | `findStudyGroupById` returns null, request is rejected before any mutation. |
-| Calling `POST /api/join` twice in a row for the same student/group | Both return `200`, member only added once | Idempotency check (`isMember`) short-circuits the second call before `canJoin`/`joinGroup` run. |
+| `POST /api/students` with the same `studentId` twice | `409` | Student ids are unique; no second row is created. |
+| `POST /api/students` with only `{"studentId":"cd5678"}` | `400` | Name, email, school, major, and a positive year are required. |
+| `GET /api/find?studentId=1` with `X-API-KEY: bogus` | `401` | The key does not belong to any registered student. |
+| `POST /api/join` with no `X-API-KEY` header | `400` | The header is required; Spring rejects the request before the controller runs. |
+| `GET /api/find?studentId=99999` | `404` | No student with that id. |
+| `GET /api/find?studentId=2` (student 2 has no preference) | `400` | There is nothing to match against; call `POST /api/` first. |
+| `POST /api/` without `id` | `400` | The preference's key is the student's id, so it is required. |
+| `POST /api/` with `"id": 999`, or `GET`/`PUT /api/999` | `404` | No such student/preference; nothing is saved. |
+| `POST /api/groups` with `"maxMembers": 1` | `400` `{"error":"maxMembers must be at least 2."}` | A group needs room for at least one more member. |
+| `POST /api/groups` with `"meetingMode": "in-person"` | `400` `{"error":"meetingMode must be IN_PERSON, ONLINE, or HYBRID."}` | Only the three enum-style values are accepted. |
+| `POST /api/groups` that includes `"numMembers": 0` | `400` | Server-controlled fields cannot be set by the client. |
+| `POST /api/groups` with `"creatorStudentId": 999` | `404` `{"error":"Student not found for ID 999"}` | The creator must be registered. |
+| `POST /api/join` into group `2` (2/2 members) | `400` | No capacity left. |
+| `POST /api/join` with a `groupId` that does not exist | `400` | Lookup fails before any change. |
+| `POST /api/leave` for student 1 using student 3's key | `403` | A student can only remove themselves. |
+| `POST /api/leave` with `{"studentId":1}` (no `groupId`) | `400` | Both ids are required; rejected before any lookup. |
+| `POST /api/leave` twice in a row | Both `200`; `numMembers` drops once | The second call sees the student is not a member and changes nothing. |
 
 ---
 
 ## 5. Build, Run, and Test Instructions
 
-**Tech stack:** Java 17, Spring Boot 4.1.1 (Spring Web, Spring Data JPA), Hibernate, PostgreSQL (hosted on Supabase) for the live datastore, H2 (in-memory) for the automated test suite, Maven for build/dependency management, Lombok for entity boilerplate.
+**Tech stack:** Java 17, Spring Boot 4.1.1 (Spring Web, Spring Data JPA), Hibernate, PostgreSQL (hosted on Supabase) for the live datastore, H2 (in-memory) for the automated tests and local demos, Maven (via the wrapper) for build/dependency management, Lombok for entity boilerplate.
 
-All configuration needed to build/run/test is checked into the repo under `study-mate/` (`pom.xml`, `mvnw`/`mvnw.cmd`, `src/main/resources/application.properties`, `src/test/resources/application.properties`).
+All configuration needed to build, run, and test is in the repo under `study-mate/`: `pom.xml`, `mvnw`/`mvnw.cmd` and `.mvn/wrapper/`, `src/main/resources/application.properties`, and `src/test/resources/` (`application.properties`, `application-api.properties`, `local-seed.sql`, and the Mockito config). Run every command below from `study-mate/`.
 
 ### Build
 ```bash
@@ -170,7 +304,7 @@ cd study-mate
 ```
 
 ### Run against the real database (Postgres/Supabase)
-The main datastore connection is externalized via environment variables (see `src/main/resources/application.properties`):
+The datastore connection is read from environment variables (see `src/main/resources/application.properties`; a local `.env` file is also picked up):
 ```bash
 cd study-mate
 DB_URL="jdbc:postgresql://<host>:5432/<db>" \
@@ -178,84 +312,96 @@ DB_USERNAME="<username>" \
 DB_PASSWORD="<password>" \
 ./mvnw spring-boot:run
 ```
-The app starts on port `8080` by default (override with `-Dspring-boot.run.arguments="--server.port=8081"`).
+The app starts on port `8080` (override with `-Dspring-boot.run.arguments="--server.port=8081"`).
 
 ### Run locally without a Postgres connection (H2, for quick manual testing)
 ```bash
 cd study-mate
 SEED_PATH="$(pwd)/src/test/resources/local-seed.sql"
 ./mvnw spring-boot:run -Dspring-boot.run.useTestClasspath=true \
-  -Dspring-boot.run.arguments="--spring.datasource.url=jdbc:h2:mem:devdb;DB_CLOSE_DELAY=-1 \
+  -Dspring-boot.run.arguments="--spring.datasource.url=jdbc:h2:mem:devdb;DB_CLOSE_DELAY=-1;NON_KEYWORDS=YEAR,DAY \
   --spring.datasource.driver-class-name=org.h2.Driver --spring.datasource.username=sa \
   --spring.datasource.password= --spring.jpa.hibernate.ddl-auto=create-drop \
   --spring.jpa.database-platform=org.hibernate.dialect.H2Dialect \
   --spring.jpa.defer-datasource-initialization=true --spring.sql.init.mode=always \
   --spring.sql.init.data-locations=file:$SEED_PATH --server.port=8081"
 ```
-This loads the sample fixture data in `src/test/resources/local-seed.sql` (2 students, 2 study groups) so `/api/find` and `/api/join` can be exercised immediately. H2 is used only for this convenience path and for the automated test suite — it is not the production datastore.
+This loads `src/test/resources/local-seed.sql` (2 students, 1 preference, 2 groups) so every endpoint can be tried right away; new students and groups get ids starting at 3. `NON_KEYWORDS=YEAR,DAY` is needed because `year` (on `Student`) and `day` (on `TimeSlot`) are reserved words in H2 2.x. H2 is only used for this path and the automated tests, not in production.
 
-### Run the unit test suite (push-button)
+### Run the unit and API test suites (push-button)
 ```bash
 cd study-mate
 ./mvnw test
 ```
-Runs all JUnit Jupiter tests via Maven Surefire. The merged verification run includes 141 tests across 9 test classes; see [reports/api-testing.md](reports/api-testing.md). No arguments or manual setup required — Spring profiles point the test run at an in-memory H2 database automatically (`src/test/resources/application.properties`).
+Runs all 187 JUnit Jupiter tests in 13 test classes through Maven Surefire, including the live HTTP API suite. No setup is needed: tests use an in-memory H2 database (`src/test/resources/application.properties`, and `application-api.properties` for the live suite). To run one class: `./mvnw -Dtest=LiveStudyMateApiTests test`.
 
-### Run the API tests (cURL)
+### Run the cURL API scripts
+With the app running locally on H2 (above):
 ```bash
 cd study-mate
-# with the app already running per one of the "Run" sections above:
 BASE_URL=http://localhost:8081 ./scripts/api-test-find-join.sh
+BASE_URL=http://localhost:8081 ./scripts/api-test-leave.sh
 ```
-This exercises `/api/find` and `/api/join` over real HTTP with 9 assertions covering the success path, both idempotency cases, and every documented error status (`400`/`401`/`404`). It prints a `PASS`/`FAIL` line per case and a final tally.
+Each prints a `PASS`/`FAIL` line per case and a final tally. The scripts can run in either order against the same instance.
 
 ### Full verification (tests + style + static analysis + coverage)
 ```bash
 cd study-mate
 ./mvnw verify
 ```
+Fails if any test fails, if Checkstyle finds a single violation, or if PMD finds a violation. Writes the reports listed in Sections 6 and 8 under `study-mate/target/`.
 
 ---
 
 ## 6. Testing
 
 ### Unit Testing
-- **Framework:** JUnit 5 + Mockito (`org.mockito:mockito-junit-jupiter`, via `spring-boot-starter-webmvc-test`/`spring-boot-starter-data-jpa-test`), AssertJ for fluent assertions.
-- **Location:** `study-mate/src/test/java/com/studymate/...` — one test class per service/controller:
-  - `Controller/ApiControllerTest.java` — controller-level tests for `/api/find` and `/api/join`, with all four collaborator services mocked via `@Mock`/`@InjectMocks`.
-  - `service/MatchingServiceTest.java`, `service/StudyGroupServiceTest.java`, `service/StudyMateApiServiceTest.java` — service-level unit tests, mocking the repository layer so no real database is touched.
-  - `StudyMateApplicationTests.java` — Spring context load smoke test.
-- Related tests are grouped by class (one class per unit under test) with shared `@BeforeEach` setup for fixture data, consistent with the assignment's grouping guidance.
-- **Config:** no extra config needed beyond `src/test/resources/application.properties` (point of truth for the H2 test datasource) — picked up automatically by Maven/Spring Boot's test classpath.
-- **Run:** `./mvnw test` (push-button, see above).
+- **Frameworks:** JUnit 5 (Jupiter) as the test framework and runner (through Maven Surefire), Mockito for test doubles (`@Mock`/`@InjectMocks` with `MockitoExtension`), AssertJ for fluent assertions, and Spring MockMvc for in-memory HTTP tests of the controller. All come in through `spring-boot-starter-webmvc-test` and `spring-boot-starter-data-jpa-test` in `study-mate/pom.xml`.
+- **Configuration:** `study-mate/pom.xml` (dependencies, Surefire, JaCoCo), `study-mate/src/test/resources/application.properties` (H2 test datasource), and `study-mate/src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker` (selects Mockito's subclass mock maker so no JVM agent is needed).
+- **Grouping:** one test class per unit, with shared fixtures built in `@BeforeEach`. Tests are independent and need no particular order.
 
-My final local verification (`./mvnw test`) output:
-```text
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0 -- in com.studymate.StudyMateApplicationTests
-[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0 -- in com.studymate.Controller.ApiControllerTest
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0 -- in com.studymate.service.StudyMateApiServiceTest
-[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0 -- in com.studymate.service.MatchingServiceTest
-[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0 -- in com.studymate.service.StudyGroupServiceTest
-[INFO] Tests run: 26, Failures: 0, Errors: 0, Skipped: 0
-[INFO] BUILD SUCCESS
-```
+| Test class (under `study-mate/src/test/java/com/studymate/`) | Unit under test | Tests | Test doubles |
+|---|---|---:|---|
+| `controller/ApiControllerTest.java` | Find, join, preference, and register endpoints | 24 | All services mocked |
+| `controller/LeaveStudyGroupControllerTest.java` | Leave endpoint (401/400/404/403/idempotent/success) | 9 | Services mocked |
+| `controller/StudyGroupCreationApiTests.java` | Create-group endpoint via MockMvc (JSON binding, 400/401/404/415) | 22 | Services mocked |
+| `request/CreateStudyGroupRequestTests.java` | Create-group request JSON (accepted and rejected fields) | 17 | None (Jackson only) |
+| `service/StudyGroupCreationTests.java` | Group creation rules, defaults, and save failures | 40 | Repository and `StudentService` mocked |
+| `service/StudyGroupServiceTest.java` | Membership: `isMember`, `canJoin`, `joinGroup`, `leaveGroup` | 15 | Repository mocked |
+| `service/PreferenceServiceTest.java` | Preference create/update/get and not-found cases | 10 | Repositories mocked |
+| `service/StudentServiceTest.java` | Student lookup and registration validation | 4 | Repository mocked |
+| `service/MatchingServiceTest.java` | Scoring and ranking | 3 | `StudyGroupService` mocked |
+| `service/StudyMateApiServiceTest.java` | API-key validation | 1 | Repository mocked |
+| `RegisterStudentIntegrationTest.java` | Register Student through the full Spring context | 3 | None (H2) |
+| `StudyMateApplicationTests.java` | Spring context loads | 1 | None |
 
 ### API Testing
-- **Tool:** cURL, per the proposal.
-- **Location:** `study-mate/scripts/api-test-find-join.sh`, with fixture data in `study-mate/src/test/resources/local-seed.sql`.
-- **What it covers:** both implemented endpoints end-to-end over real HTTP — success responses, `401`/`404`/`400` error paths, and the join-idempotency behavior described in Section 2.
-- This was also run manually against the team's real Supabase Postgres instance (not just H2) to confirm persistence — see Section 7.
+Two complementary tools, both in the repo:
+
+1. **JUnit + Java `HttpClient` live suite** — `study-mate/src/test/java/com/studymate/api/LiveStudyMateApiTests.java` (38 tests). It starts the whole application on a random localhost port and sends real HTTP requests. Nothing is mocked: services, repositories, JSON handling, and transactions are real, on an isolated in-memory H2 database (`study-mate/src/test/resources/application-api.properties`). Each test resets the database, seeds the student it needs, and re-reads saved data in a separate transaction to prove the change was committed. It covers health, group creation (success, repeats, every 400/401/404/415 case, and "nothing saved" on rejection), preference create/read/update and their 404s, and matching (ranking, empty results, and every exclusion rule). It runs as part of `./mvnw test`.
+2. **cURL scripts** — `study-mate/scripts/api-test-find-join.sh` (9 cases: find/join success, both idempotency cases, 400/401/404) and `study-mate/scripts/api-test-leave.sh` (11 cases: join then leave, idempotent retry, 400/401/403/404). They run against a running server (Section 5) using the fixture data in `study-mate/src/test/resources/local-seed.sql`.
+
+Latest results: [reports/api-testing.md](reports/api-testing.md). All 38 live tests pass, as do 9/9 and 11/11 cURL cases.
 
 ### Test Coverage
-- **Tool:** JaCoCo (`org.jacoco:jacoco-maven-plugin`), bound to the `verify` phase in `study-mate/pom.xml`.
-- **Report location:** `study-mate/target/site/jacoco/index.html` (HTML) and `study-mate/target/site/jacoco/jacoco.csv` (raw), generated by `./mvnw verify`.
-- **Result:** **89.7% branch coverage** (61/68 branches covered) on this branch, above the 55% requirement for this iteration.
-- **Note:** this number is measured on `harry/matching` only, pre-merge. It will be regenerated once all teammates' branches are merged into `main`, since more untested/partially-tested code (register/create/leave endpoints) will enter the coverage denominator.
+- **Tool:** JaCoCo (`jacoco-maven-plugin` 0.8.14), configured in `study-mate/pom.xml`; the report is generated during `./mvnw verify`.
+- **Result:** **91.01% branch coverage (162 of 178 branches)** over all main code, above the 55% target for this iteration (and the 80% target for the next one).
+- **Checked-in reports:** [reports/jacoco-coverage.xml](reports/jacoco-coverage.xml) and [reports/jacoco-coverage.csv](reports/jacoco-coverage.csv). The HTML report is regenerated at `study-mate/target/site/jacoco/index.html`.
+
+### Bugs found by the tests and fixed
+- `POST /api/join` had two `@RequestBody` parameters and failed over real HTTP; it now takes a `JoinGroupRequest`.
+- `GET /api/find` read `studentId` from a request body; it is now a query parameter.
+- `joinGroup` never saved the new membership; it now calls `save`.
+- Joining twice returned `400`; it is now an idempotent `200`.
+- `POST /api/` crashed on every call (Hibernate could not save a `@MapsId` entity with a preset id); the service now attaches the student and saves a managed entity.
+- Missing students or preferences on `POST /api/`, `PUT /api/{id}`, and `GET /api/{id}` returned `500`; they now return `404`.
+- The local H2 seed did not advance the id counters, so registering a student or creating a group on the demo database failed with a primary-key error; the seed now restarts the counters.
 
 ---
 
 ## 7. Manual End-to-End Verification (against real Postgres/Supabase)
 
+This check was run on the `harry/matching` branch before the other components were merged.
 Beyond the automated suite, `/api/find` and `/api/join` were manually run against the team's actual Supabase-hosted PostgreSQL instance (not just the H2 test database) to confirm real persistence:
 - Confirmed the Supabase schema's column names (`year`, `day`) match the JPA entity mappings exactly.
 - Found and fixed a pre-existing schema bug: `preference_available_times`/`preference_study_styles` each had a second, stale foreign key pointing at an orphaned legacy table (`study_preferences`, 0 rows, unused by any current entity) in addition to the correct one pointing at `preference`. This silently blocked saving a student's available times/study styles. The two stale constraints were dropped (non-destructive — no data loss).
@@ -283,34 +429,25 @@ All 9/9 matched the documented contract in Section 3. The same 9 cases are autom
 
 ## 8. Style Checking + Self-Documenting Code
 
-- **Tool:** Checkstyle (`org.apache.maven.plugins:maven-checkstyle-plugin`), ruleset **`google_checks.xml`** (Google Java Style), bound to the `verify` phase in `study-mate/pom.xml`.
-- **Report location:** `study-mate/target/checkstyle-result.xml`, generated by `./mvnw verify` or `./mvnw checkstyle:check`.
-- Code uses mnemonic identifiers (`findCompatibleStudyGroups`, `isMember`, `canJoin`, `joinGroup`, etc.), Javadoc header comments on every public method describing parameters/return/side effects, and inline comments only where the "why" isn't obvious (e.g., the idempotency short-circuit in `joinStudyGroup`).
+- **Tool:** Checkstyle, via `maven-checkstyle-plugin` 3.6.0 (Checkstyle 9.3).
+- **Ruleset:** the bundled **`google_checks.xml`** (Google Java Style).
+- **Configuration:** `study-mate/pom.xml`. It checks both `src/main` and `src/test` (`includeTestSourceDirectory=true`) and counts every Google-style warning as a violation (`violationSeverity=warning`), so `./mvnw verify` fails unless the whole codebase is clean.
+- **Latest report:** [reports/checkstyle-report.txt](reports/checkstyle-report.txt) (summary) and [reports/checkstyle-result.xml](reports/checkstyle-result.xml) (full output). **Result: 0 violations across all 34 Java files.**
+- Code was formatted with google-java-format (via `com.spotify.fmt:fmt-maven-plugin`, which is not part of the build). To reformat after editing:
+  ```bash
+  ./mvnw com.spotify.fmt:fmt-maven-plugin:2.25:format
+  ```
+- Run the style check on its own:
+  ```bash
+  ./mvnw checkstyle:check
+  # [INFO] You have 0 Checkstyle violations.
+  ```
 
-Run:
-```bash
-./mvnw checkstyle:check
-```
-My final verification produced:
-```text
-[INFO] You have 0 Checkstyle violations.
-[INFO] BUILD SUCCESS
-```
-(`failsOnError=true` in `pom.xml`, so the build fails if this regresses above 0 errors — the warnings Checkstyle prints for pre-existing indentation style on files outside this component's scope do not count as errors and do not fail the build.)
+**Self-documenting code:** classes and methods use descriptive names (`findCompatibleStudyGroups`, `isMember`, `canJoin`, `joinGroup`, `leaveGroup`, `validateApiKey`). Every class has a Javadoc header, and public methods document their parameters, return values, and status codes. Inline comments explain the reasoning where it is not obvious, such as the idempotency short-circuits in join/leave and the scoring rules in `MatchingService`.
 
 ### Static Analysis
-- **Tool:** PMD 7.17.0 (`org.apache.maven.plugins:maven-pmd-plugin` 3.28.0), bound to the `verify` phase.
-- **Report location:** `study-mate/target/pmd.xml` (raw) / `study-mate/target/reports/pmd.html` (HTML).
-
-Run:
-```bash
-./mvnw pmd:check
-```
-My final verification produced:
-```text
-[INFO] BUILD SUCCESS
-```
-with 0 entries in `target/pmd.xml`.
+- **Tool:** PMD 7.17.0 (`maven-pmd-plugin` 3.28.0), default ruleset, run during `./mvnw verify`.
+- **Latest report:** [reports/pmd.xml](reports/pmd.xml) — **0 violations**. The HTML version is regenerated at `study-mate/target/reports/pmd.html`.
 
 ---
 
@@ -377,25 +514,33 @@ Workflow status and logs are visible from the repository's **Actions** tab.
 
 ## 10. Third-Party Code Disclosure
 
-No third-party source code is vendored/copy-pasted into this repository. All external functionality is pulled in as a managed Maven dependency (declared in `study-mate/pom.xml`) and fetched from Maven Central at build time:
+**Code included in the repository:**
+
+| Code | Location | Source |
+|---|---|---|
+| Apache Maven Wrapper 3.3.4 scripts (Apache License 2.0) | `study-mate/mvnw`, `study-mate/mvnw.cmd`, `study-mate/.mvn/wrapper/maven-wrapper.properties` | Generated by the Apache Maven Wrapper, https://maven.apache.org/wrapper/. The scripts download Maven 3.10.0 from Maven Central on first use. |
+
+No other third-party source code is copied into the repository. Libraries and tools are declared in `study-mate/pom.xml` and downloaded from Maven Central at build time:
 
 | Dependency | Purpose |
 |---|---|
 | `spring-boot-starter-data-jpa`, `spring-boot-starter-webmvc` | Web framework, JPA/ORM |
-| `org.postgresql:postgresql` | PostgreSQL JDBC driver (prod datastore, Supabase) |
-| `com.h2database:h2` | In-memory DB for the automated test suite |
-| `org.projectlombok:lombok` | Boilerplate reduction (getters/setters) on entity classes |
-| `org.mockito:*`, JUnit 5, AssertJ | Testing frameworks |
+| `org.postgresql:postgresql` | PostgreSQL JDBC driver (production datastore, Supabase) |
+| `com.h2database:h2` | In-memory database for tests and local demos |
+| `org.projectlombok:lombok` | Generates getters/setters/constructors on entities and DTOs |
+| JUnit 5, Mockito, AssertJ, Spring MockMvc (via the Spring Boot test starters) | Testing |
 | `org.jacoco:jacoco-maven-plugin` | Coverage reporting |
-| `org.apache.maven.plugins:maven-checkstyle-plugin` (+ Google's `google_checks.xml` ruleset) | Style checking |
-| `org.apache.maven.plugins:maven-pmd-plugin` | Static analysis |
+| `maven-checkstyle-plugin` with its bundled `google_checks.xml` | Style checking |
+| `maven-pmd-plugin` | Static analysis |
+| `com.spotify.fmt:fmt-maven-plugin` (run from the command line only, not in `pom.xml`) | google-java-format formatting |
 
 ---
 
 ## 11. Project Management
 
-Tasks are tracked via **GitHub Issues / GitHub Projects** on the repository (https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject).
-*(Insert the specific Project board URL here, and confirm the Mentor and Instructor have been granted access, per the assignment requirement.)*
+Tasks for each team member are tracked with **GitHub Issues / GitHub Projects** on the repository (https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject). The owner of each component is listed in the table under [Authors / Team Members](#authors--team-members) and in [Section 1](#1-implementation-status-this-iteration--mvp), and every component was developed on its own branch and merged through a pull request.
+
+*(TODO before submission: add the Project board URL here and confirm the Mentor and Instructor have access.)*
 
 ---
 
@@ -404,7 +549,7 @@ Tasks are tracked via **GitHub Issues / GitHub Projects** on the repository (htt
 **Tool used:** Claude Code (Anthropic), via its CLI/terminal integration (model: Claude Opus/Sonnet 5 family, accessed through Hyunwoo Kang's Claude account).
 
 **How it was used (this component — Find Compatible Study Groups / Join Study Group):**
-- Generated the full unit test suite in `study-mate/src/test/java/com/studymate/Controller/ApiControllerTest.java` from scratch, based on the existing `MatchingServiceTest`/`StudyGroupServiceTest` Mockito patterns already in the repo.
+- Generated the full unit test suite in `study-mate/src/test/java/com/studymate/controller/ApiControllerTest.java` from scratch, based on the existing `MatchingServiceTest`/`StudyGroupServiceTest` Mockito patterns already in the repo.
 - Debugged and fixed real bugs found while writing/running those tests and while doing manual API testing:
   - A double-`@RequestBody` parameter bug on `POST /api/join` that would have failed at runtime over real HTTP (fixed by introducing `JoinGroupRequest` DTO — see `study-mate/src/main/java/com/studymate/dto/JoinGroupRequest.java`).
   - `GET /api/find` incorrectly used `@RequestBody` for a GET request's `studentId`; changed to `@RequestParam`.
@@ -423,187 +568,33 @@ Tasks are tracked via **GitHub Issues / GitHub Projects** on the repository (htt
 
 **Estimated token usage (this component, this session):** ~400,000–600,000 tokens (combined input + output, including tool/command output consumed as context). This is a rough self-reported estimate based on session length and complexity, not an exact billing figure — for the precise number, pull actual usage from the Claude Code session cost report (`/cost`) or the Anthropic Console usage dashboard tied to the account used.
 
+### Leave Study Group component (Ziyue Fang)
+
+**Tool used:** Claude (Anthropic), Cowork mode, model Claude Opus 5.5, via Ziyue Fang's Claude account.
+
+**What it generated (all reviewed by Ziyue Fang and marked inline with `AI-generated` comments, following the team convention):**
+- `POST /api/leave` handler in `ApiController.java` and `StudyGroupService.leaveGroup()`.
+- `dto/LeaveGroupRequest.java`.
+- `controller/LeaveStudyGroupControllerTest.java` and the `leaveGroup` tests at the end of `service/StudyGroupServiceTest.java`.
+- `scripts/api-test-leave.sh`.
+- The `/api/leave` parts of this README, plus the `NON_KEYWORDS=YEAR,DAY` fix to the local H2 run command (found while running the API tests).
+
+**Representative prompt:** "Implement my part (Leave Study Group): entity/repository/service logic, the endpoint, validation, failure cases, idempotency, unit tests with mocks, API tests, and the README section."
+
 ---
 
-## 13. Final Verification (this component, pre-merge)
+## 13. Final Verification
 
-Run from `study-mate/`, on the `harry/matching` branch, before merging into `main`:
+Run from `study-mate/` with every component merged:
 
 ```text
 ./mvnw verify
 
-Tests run: 26, Failures: 0, Errors: 0, Skipped: 0
-Checkstyle violations: 0
+Tests run: 187, Failures: 0, Errors: 0, Skipped: 0
+You have 0 Checkstyle violations.
 PMD violations: 0
-Branch coverage: 89.7% (61/68)
+Branch coverage: 91.01% (162/178)
 BUILD SUCCESS
 ```
 
-Plus the manual cURL verification against the live Supabase Postgres instance in Section 7: **9/9 cases matched** the documented contract in Section 3, including confirming `/api/join` durably persists membership changes (checked independently via `psql`, not just the HTTP response).
-
-**The matching/join figures above are historical component-only results.** Current `creategroups` also includes group creation and the live API suite. See [reports/api-testing.md](reports/api-testing.md) for the merged verification results.
-
-## Study group creation request
-
-`study-mate/src/main/java/com/studymate/request/CreateStudyGroupRequest.java`
-defines the incoming JSON fields for group creation. The service operation is
-implemented in `StudyGroupService.createStudyGroup` and is exposed through
-`POST /api/groups`. Send `Content-Type: application/json` and an `X-API-KEY` header
-with the following body. The creator must already exist in the database; there
-is currently no student-registration endpoint.
-
-```json
-{
-  "creatorStudentId": 7,
-  "name": "Software Engineering Study Group",
-  "course": "COMS W4156",
-  "maxMembers": 4,
-  "schedules": [
-    {"day": "MONDAY", "startTime": "14:00", "endTime": "16:00"}
-  ],
-  "studyStyles": ["DISCUSSION", "PRACTICE"],
-  "meetingMode": "ONLINE"
-}
-```
-
-`creatorStudentId` is the student's numeric database ID, rather than the string
-student identifier stored in a group's membership list. The study-style values
-above are examples; a fixed vocabulary is not enforced yet.
-
-The creation service requires an existing creator with a school and student
-identifier, a nonblank name and course, capacity of at least two, at least one
-valid weekly schedule, and at least one nonblank, unique study style. Schedules
-must start before they end and must not overlap on the same day. Adjacent time
-slots are allowed. Meeting mode must be `IN_PERSON`, `ONLINE`, or `HYBRID`.
-
-The service copies the creator's school, adds the creator's string student
-identifier as the first member, sets the member count to one, and opens
-recruitment. It saves a fresh group in a transaction and returns the generated
-group ID with the saved group. Repeated valid calls create separate groups.
-Invalid values throw `IllegalArgumentException`; a missing creator throws
-`NoSuchElementException`. The controller maps these failures to the HTTP responses
-below.
-
-| Status | Meaning |
-| --- | --- |
-| `200` | The group was saved; the response contains the group and its generated ID. |
-| `400` | Group values are invalid, or the JSON is missing, malformed, or contains forbidden fields. |
-| `401` | The API key is missing, blank, or rejected by the API-key service. |
-| `404` | No student exists for the provided creator ID. |
-| `415` | The request uses an unsupported content type. |
-| `500` | An unexpected server or database failure occurred. |
-
-Service validation and missing-student responses include an `error` message,
-for example `{"error":"maxMembers must be at least 2."}`. JSON parsing errors
-are handled by Spring and may have a different response body. Spring parses the
-body before the controller runs, so malformed JSON can return `400` before the
-API key is checked.
-
-The API-key service checks registered students through `existsByApiKey`.
-Missing, blank, and unknown keys are rejected. The key check does not verify
-that the caller owns the creator's student record.
-
-The request rejects all unrecognized top-level fields, including `groupId`,
-`school`, `memberIds`, `numMembers`, `isRecruiting`, and `recruiting`, even when
-their value is `null`. These values will be supplied by the server. Rejection is
-specific to this request class and does not change JSON handling for existing
-endpoints. The request reuses the existing `TimeSlot` representation for schedules.
-
-The JUnit tests in
-`study-mate/src/test/java/com/studymate/request/CreateStudyGroupRequestTests.java`
-exercise valid JSON, forbidden fields, and misspelled fields using Jackson. They
-run without a database. From `study-mate/`, run:
-
-```sh
-./mvnw -Dtest=CreateStudyGroupRequestTests test
-```
-
-## Group creation tests
-
-Tests use JUnit Jupiter with Mockito for test doubles and Spring MockMvc for
-in-memory HTTP request handling. Maven dependencies and the JaCoCo coverage
-configuration are in `study-mate/pom.xml`.
-
-| Test file under `study-mate/src/test/java/com/studymate/` | Coverage |
-| --- | --- |
-| `service/StudyGroupCreationTests.java` | Creator lookup, group defaults, validation, copied input, repeated submissions, and save failures. |
-| `controller/StudyGroupCreationApiTests.java` | JSON binding, returned group, missing/blank/rejected keys, `400`/`401`/`404` responses, forbidden fields, and unsupported content types. |
-| `request/CreateStudyGroupRequestTests.java` | Accepted JSON fields and rejection of unknown or server-controlled fields. |
-
-Service tests mock student lookup and database access. Controller tests mock the
-services while exercising Spring's request parsing and response serialization.
-They do not verify real database persistence or real API-key validation.
-Tests share setup through `@BeforeEach` and run independently without a required
-execution order.
-
-`study-mate/src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker`
-selects Mockito's subclass mock maker. The tests mock non-final classes and
-interfaces, so no JVM agent attachment is needed.
-
-From `study-mate/`, run all tests and configured checks with:
-
-```sh
-./mvnw verify
-```
-
-To run only group-creation tests:
-
-```sh
-./mvnw -Dtest=StudyGroupCreationTests,StudyGroupCreationApiTests,CreateStudyGroupRequestTests test
-```
-
-After `verify`, test results are in `study-mate/target/surefire-reports/` and
-the JaCoCo coverage report is at `study-mate/target/site/jacoco/index.html`.
-These generated directories are ignored by Git.
-
-## Live HTTP API testing
-
-`study-mate/src/test/java/com/studymate/api/LiveStudyMateApiTests.java` uses JUnit
-Jupiter and Java 17's `HttpClient` as the API test runner and HTTP client. It starts
-the full Spring Boot application on a random loopback port, sends real HTTP
-requests, and uses real services and repositories. No services or repositories
-are mocked in this suite.
-
-From `study-mate/`, run:
-
-```sh
-./mvnw -Dtest=LiveStudyMateApiTests test
-```
-
-The suite also runs as part of `./mvnw verify`. Java 17 and a local TCP port are
-required; PostgreSQL, API credentials, and a separately started server are not.
-Maven downloads dependencies on the first run as usual.
-
-The test-only `api` profile is configured in
-`study-mate/src/test/resources/application-api.properties`. It uses an isolated
-in-memory H2 database and binds the server to `127.0.0.1`. `NON_KEYWORDS=DAY,YEAR`
-allows the existing entity column names, and Hibernate is configured to fail
-startup on schema errors. This does not alter production PostgreSQL settings.
-
-Every test resets the isolated database and commits its prerequisite student
-records before sending requests. Preference scenarios also seed prerequisite
-preferences through the repository because preference creation is incomplete.
-Assertions reload saved data in separate transactions after HTTP responses;
-requests are not wrapped in a test transaction that could hide missing commits.
-Tests run independently and require no manual student-ID configuration.
-
-| Endpoint | Live scenarios |
-| --- | --- |
-| `GET /api/health` | Response status and health message. |
-| `POST /api/groups` | Success and committed collections; repeated submissions; missing/blank/unknown keys; unknown creator; invalid values, JSON, and server-controlled fields; unsupported content type; rejected requests save no group. |
-| `GET /api/{id}` | Retrieve a seeded preference and read it again after an update. |
-| `PUT /api/{id}` | Update preferences and confirm values were committed. |
-| `GET /api/find` | Discover a newly created group; reject missing students/preferences; return empty results; rank the top three; exclude different school/course/mode, closed, and full groups. |
-
-The suite verifies H2 persistence, not PostgreSQL compatibility. API keys are
-validated against registered students; fixtures include a registered key, and
-live tests reject unknown keys. Matching uses `GET /api/find?studentId={id}`.
-The key check does not establish ownership of the requested student record.
-
-`POST /api/` (initial preference creation) remains outside this acceptance suite
-because it does not attach the required student. Joining is now implemented as
-`POST /api/join` on main and has its own unit tests and cURL suite described above.
-The live suite here focuses on creation, preferences, and matching.
-
-Results are generated under `study-mate/target/surefire-reports/`. A checked-in
-run summary and limitations are recorded in [reports/api-testing.md](reports/api-testing.md).
+cURL scripts against the local H2 instance: `api-test-find-join.sh` 9/9 passed, `api-test-leave.sh` 11/11 passed. The checked-in reports are in [`reports/`](reports/).

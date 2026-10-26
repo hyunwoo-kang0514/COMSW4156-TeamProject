@@ -21,13 +21,13 @@ import tools.jackson.databind.json.JsonMapper;
 class CreateStudyGroupRequestTests {
 
   // Rejection must work even when the application ignores unknown fields in other requests.
-  private final JsonMapper mapper = JsonMapper.builder()
-      .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-      .build();
+  private final JsonMapper mapper =
+      JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).build();
 
   @Test
   void readsCallerProvidedFieldsAndWeeklySchedules() {
-    String json = """
+    String json =
+        """
         {
           "creatorStudentId": 7,
           "name": "Software Engineering Study Group",
@@ -60,22 +60,30 @@ class CreateStudyGroupRequestTests {
   void rejectsServerControlledFieldsAndTypos(String fieldName, String jsonValue) {
     String json = "{\"" + fieldName + "\":" + jsonValue + "}";
 
-    DatabindException exception = assertThrows(
-        DatabindException.class, () -> mapper.readValue(json, CreateStudyGroupRequest.class));
+    DatabindException exception =
+        assertThrows(
+            DatabindException.class, () -> mapper.readValue(json, CreateStudyGroupRequest.class));
 
     assertTrue(exception.getMessage().contains(fieldName));
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {
-      "groupId", "school", "memberIds", "numMembers", "isRecruiting", "recruiting",
-      "studySytles", "unexpectedField"
-  })
+  @ValueSource(
+      strings = {
+        "groupId",
+        "school",
+        "memberIds",
+        "numMembers",
+        "isRecruiting",
+        "recruiting",
+        "studySytles",
+        "unexpectedField"
+      })
   void rejectsUnrecognizedFieldsEvenWhenTheirValueIsNull(String fieldName) {
     String json = "{\"" + fieldName + "\":null}";
 
-    assertThrows(DatabindException.class,
-        () -> mapper.readValue(json, CreateStudyGroupRequest.class));
+    assertThrows(
+        DatabindException.class, () -> mapper.readValue(json, CreateStudyGroupRequest.class));
   }
 
   private static Stream<Arguments> unrecognizedFields() {

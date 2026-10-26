@@ -41,10 +41,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class StudyGroupCreationTests {
 
-  @Mock
-  private StudyGroupRepository repository;
-  @Mock
-  private StudentService studentService;
+  @Mock private StudyGroupRepository repository;
+  @Mock private StudentService studentService;
 
   private StudyGroupService service;
   private Student creator;
@@ -72,12 +70,14 @@ class StudyGroupCreationTests {
   void createsGroupWithServerDefaultsAndReturnsRepositoryResult(String mode) {
     request.setMeetingMode(" " + mode + " ");
     when(studentService.findStudentById(7L)).thenReturn(creator);
-    when(repository.save(any(StudyGroup.class))).thenAnswer(invocation -> {
-      StudyGroup group = invocation.getArgument(0);
-      assertNull(group.getGroupId());
-      group.setGroupId(42L);
-      return group;
-    });
+    when(repository.save(any(StudyGroup.class)))
+        .thenAnswer(
+            invocation -> {
+              StudyGroup group = invocation.getArgument(0);
+              assertNull(group.getGroupId());
+              group.setGroupId(42L);
+              return group;
+            });
 
     StudyGroup group = service.createStudyGroup(request);
 
@@ -118,12 +118,14 @@ class StudyGroupCreationTests {
   void repeatedRequestsSaveTwoFreshGroups() {
     when(studentService.findStudentById(7L)).thenReturn(creator);
     AtomicLong nextId = new AtomicLong();
-    when(repository.save(any(StudyGroup.class))).thenAnswer(call -> {
-      StudyGroup group = call.getArgument(0);
-      assertNull(group.getGroupId());
-      group.setGroupId(nextId.incrementAndGet());
-      return group;
-    });
+    when(repository.save(any(StudyGroup.class)))
+        .thenAnswer(
+            call -> {
+              StudyGroup group = call.getArgument(0);
+              assertNull(group.getGroupId());
+              group.setGroupId(nextId.incrementAndGet());
+              return group;
+            });
 
     StudyGroup first = service.createStudyGroup(request);
     StudyGroup second = service.createStudyGroup(request);
@@ -177,8 +179,9 @@ class StudyGroupCreationTests {
     invalidate.accept(request);
     when(studentService.findStudentById(7L)).thenReturn(creator);
 
-    IllegalArgumentException error = assertThrows(
-        IllegalArgumentException.class, () -> service.createStudyGroup(request), description);
+    IllegalArgumentException error =
+        assertThrows(
+            IllegalArgumentException.class, () -> service.createStudyGroup(request), description);
 
     assertTrue(error.getMessage().length() > 0);
     verify(repository, never()).save(any(StudyGroup.class));
@@ -188,8 +191,11 @@ class StudyGroupCreationTests {
   void acceptsMinimumCapacityAdjacentTimesAndSameTimesOnDifferentDays() {
     request.setMaxMembers(2);
     request.setStudyStyles(List.of("DISCUSSION"));
-    request.setSchedules(List.of(slot(DayOfWeek.MONDAY, 14, 16),
-        slot(DayOfWeek.MONDAY, 16, 17), slot(DayOfWeek.TUESDAY, 14, 16)));
+    request.setSchedules(
+        List.of(
+            slot(DayOfWeek.MONDAY, 14, 16),
+            slot(DayOfWeek.MONDAY, 16, 17),
+            slot(DayOfWeek.TUESDAY, 14, 16)));
     when(studentService.findStudentById(7L)).thenReturn(creator);
     when(repository.save(any(StudyGroup.class))).thenAnswer(call -> call.getArgument(0));
 
@@ -229,7 +235,8 @@ class StudyGroupCreationTests {
         invalid("equal times", r -> r.setSchedules(List.of(slot(DayOfWeek.MONDAY, 14, 14)))),
         invalid("reversed times", r -> r.setSchedules(List.of(slot(DayOfWeek.MONDAY, 16, 14)))),
         invalid("overlapping times", r -> r.getSchedules().add(slot(DayOfWeek.MONDAY, 15, 17))),
-        invalid("overlap from earlier start",
+        invalid(
+            "overlap from earlier start",
             r -> r.getSchedules().add(slot(DayOfWeek.MONDAY, 13, 15))),
         invalid("containing interval", r -> r.getSchedules().add(slot(DayOfWeek.MONDAY, 13, 17))),
         invalid("duplicate times", r -> r.getSchedules().add(slot(DayOfWeek.MONDAY, 14, 16))),
@@ -237,7 +244,8 @@ class StudyGroupCreationTests {
         invalid("empty styles", r -> r.setStudyStyles(List.of())),
         invalid("null style", r -> r.setStudyStyles(Arrays.asList((String) null))),
         invalid("blank style", r -> r.setStudyStyles(List.of(" "))),
-        invalid("duplicate styles after trimming",
+        invalid(
+            "duplicate styles after trimming",
             r -> r.setStudyStyles(List.of("DISCUSSION", " DISCUSSION "))));
   }
 
