@@ -141,6 +141,8 @@ public class ApiController {
     }
 
     // Add the preference in the request body to the database
+    // AI-fixed (Claude Code), reviewed by Ziyue Fang: missing student or
+    // preference returns 404 (and a missing id 400) instead of a 500.
     try {
       Preference savedPreference = preferenceService.addStudentStudyPreferences(preference);
       return new ResponseEntity<>(savedPreference, HttpStatus.CREATED);
@@ -172,6 +174,8 @@ public class ApiController {
     }
 
     // update the study preference for this student
+    // AI-fixed (Claude Code), reviewed by Ziyue Fang: missing student or
+    // preference returns 404 (and a missing id 400) instead of a 500.
     try {
       Preference savedPreference = preferenceService.updateStudentStudyPreferences(id, preference);
       return new ResponseEntity<>(savedPreference, HttpStatus.OK);
@@ -197,6 +201,8 @@ public class ApiController {
     }
 
     // get the information stored in a student's study preferences
+    // AI-fixed (Claude Code), reviewed by Ziyue Fang: missing student or
+    // preference returns 404 (and a missing id 400) instead of a 500.
     try {
       Preference gottenPreference = preferenceService.getStudentStudyPreferences(id);
       return new ResponseEntity<>(gottenPreference, HttpStatus.OK);

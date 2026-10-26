@@ -119,6 +119,7 @@
 					<configLocation>google_checks.xml</configLocation>
 					<consoleOutput>true</consoleOutput>
 					<failsOnError>true</failsOnError>
+					<!-- AI-generated (Claude Code), reviewed by Ziyue Fang. See README "AI Documentation". -->
 					<!-- Treat every Google-style warning as a violation so the build only passes when clean. -->
 					<violationSeverity>warning</violationSeverity>
 					<includeTestSourceDirectory>true</includeTestSourceDirectory>
