@@ -16,6 +16,7 @@ import com.studymate.domain.Student;
 import com.studymate.domain.StudyGroup;
 import com.studymate.request.CreateStudyGroupRequest;
 import com.studymate.dto.JoinGroupRequest;
+import com.studymate.dto.LeaveGroupRequest;
 import com.studymate.service.MatchingService;
 import com.studymate.service.StudentService;
 import com.studymate.service.StudyGroupService;
@@ -250,6 +251,67 @@ public class ApiController {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(studyGroup);
+    }
+
+    /**
+     * Remove a student from a study group. A student may only remove themselves:
+     * the X-API-KEY must belong to the student named in the request body.
+     * Repeating the call after the student has already left is safe and returns
+     * 200 with the current group, so clients can retry without special handling.
+     * AI-generated (Claude Code), reviewed by Ziyue Fang. See README "AI Documentation".
+     * @param apiKey api key of the caller
+     * @param request body containing the student id and the group id
+     * @return 200 with the updated group on success (also if not a member),
+     *         400 if the body or either id is missing,
+     *         401 if the API key is invalid,
+     *         403 if the API key belongs to a different student,
+     *         404 if the student or group does not exist
+     */
+    @PostMapping("/leave")
+    public ResponseEntity<?> leaveStudyGroup(
+            @RequestHeader("X-API-KEY") final String apiKey,
+            @RequestBody(required = false) final LeaveGroupRequest request
+    ) {
+        // Validate whether API key is valid
+        if (!studyMateApiService.validateApiKey(apiKey)) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .build();
+        }
+
+        // Both ids are required; reject before touching the database
+        if (request == null || request.getStudentId() == null || request.getGroupId() == null) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .build();
+        }
+
+        Student student = studentService.findStudentById(request.getStudentId());
+        StudyGroup studyGroup = studyGroupService.findStudyGroupById(request.getGroupId());
+        if (student == null || studyGroup == null) {
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .build();
+        }
+
+        // Leaving is destructive, so a caller may only remove themselves
+        if (!apiKey.equals(student.getApiKey())) {
+            return ResponseEntity
+                    .status(HttpStatus.FORBIDDEN)
+                    .build();
+        }
+
+        // Idempotent retry: not a member (or already left), return the group unchanged
+        if (!studyGroupService.isMember(student, studyGroup)) {
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(studyGroup);
+        }
+
+        StudyGroup updatedGroup = studyGroupService.leaveGroup(student, studyGroup);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(updatedGroup);
     }
 
 }

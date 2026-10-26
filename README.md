@@ -63,7 +63,7 @@ The proposal specifies six operations. This iteration focuses on a vertical slic
 | Register Student | — | 🚧 Planned (owner: Kevin Chuang) |
 | Register/Update Study Preference | — | 🚧 Planned (owner: Ugorji Benjamin Barrah) |
 | Create Study Group | `POST /api/groups` | Implemented with validation, unit tests, and MockMvc tests |
-| Leave Study Group | — | 🚧 Planned (owner: Ziyue Fang) |
+| Leave Study Group | `POST /api/leave` | ✅ Implemented, unit-tested, API-tested (owner: Ziyue Fang) |
 
 This matches the assignment's MVP requirement: "as many as possible of the API entry points should be operational and demoable" rather than all proposed functionality.
 
@@ -157,6 +157,20 @@ Retrieves a student's registered study preference.
 | **Call-order dependency** | The preference must already exist (created via `POST /api/`). |
 | **Idempotent?** | Yes — returns the current stored preference every call. |
 
+### `POST /api/leave`
+Removes a student from a study group. *(Owner: Ziyue Fang)*
+
+| | |
+|---|---|
+| **Headers** | `X-API-KEY: <api key>`, `Content-Type: application/json` |
+| **Body** | `{"studentId": <Long>, "groupId": <Long>}` (`studentId` is the student's database `id`, same as `/api/join`) |
+| **Success** | `200 OK` — JSON `StudyGroup` object reflecting the updated membership (or the unchanged group if the student was not a member). |
+| **Errors** | `400 Bad Request` — body is missing/malformed, or `studentId`/`groupId` is missing.<br>`401 Unauthorized` — API key is invalid/unknown.<br>`403 Forbidden` — the API key is valid but belongs to a different student (a student can only remove themselves).<br>`404 Not Found` — no student or no group with that id. |
+| **Check order** | `401` (key) → `400` (body) → `404` (student/group lookup) → `403` (key owner) → membership check. No data is changed unless every check passes. |
+| **Side effects** | On success, every occurrence of the student's `studentId` is removed from the group's `memberIds`, `numMembers` is decremented by the number removed (never below 0), and the change is persisted in one transaction (`StudyGroupService.leaveGroup`, `StudyGroupRepository.save`). The group is **not** deleted when its last member leaves, and `isRecruiting` is left unchanged. |
+| **Call-order dependency** | The student and group must already exist, and for anything to change the student must have joined the group first (`POST /api/join`). |
+| **Idempotent?** | Yes — calling it again after the student has left (or for a student who was never a member) returns `200 OK` with the current group and does not write to the database. Retrying a leave whose response was lost is therefore safe. |
+
 ---
 
 ## 4. Example Usage Scenarios
@@ -184,6 +198,24 @@ curl -X POST "http://localhost:8081/api/join" \
 #    need to appear in student 1's /api/find results first.)
 ```
 
+**Correct usage — join then leave:**
+```bash
+# 1. Student 1 joins group 1
+curl -X POST "http://localhost:8081/api/join" \
+  -H "X-API-KEY: test-key-1" -H "Content-Type: application/json" \
+  -d '{"studentId":1,"groupId":1}'
+# -> 200, numMembers 1 -> 2, memberIds gains "hk3382"
+
+# 2. Student 1 leaves group 1
+curl -X POST "http://localhost:8081/api/leave" \
+  -H "X-API-KEY: test-key-1" -H "Content-Type: application/json" \
+  -d '{"studentId":1,"groupId":1}'
+# -> 200, numMembers 2 -> 1, "hk3382" removed from memberIds
+
+# 3. Retrying the same leave is safe
+# -> 200, group unchanged
+```
+
 **Contrived bad usage (and why it fails):**
 
 | Call | Result | Why |
@@ -194,6 +226,10 @@ curl -X POST "http://localhost:8081/api/join" \
 | `POST /api/join` with `groupId` for a group at `numMembers == maxMembers` | `400` | `StudyGroupService.canJoin()` rejects — no capacity left. |
 | `POST /api/join` with a `groupId` that doesn't exist | `400` | `findStudyGroupById` returns null, request is rejected before any mutation. |
 | Calling `POST /api/join` twice in a row for the same student/group | Both return `200`, member only added once | Idempotency check (`isMember`) short-circuits the second call before `canJoin`/`joinGroup` run. |
+| `POST /api/leave` with `X-API-KEY: test-key-2` and `{"studentId":1,"groupId":1}` | `403` | The key is valid but belongs to student 2; a student can only remove themselves from a group. |
+| `POST /api/leave` with `{"studentId":1}` (no `groupId`) | `400` | Both ids are required; rejected before any database lookup. |
+| `POST /api/leave` with a `groupId` or `studentId` that doesn't exist | `404` | Lookup returns null, request is rejected before any mutation. |
+| Calling `POST /api/leave` twice in a row for the same student/group | Both return `200`, `numMembers` only decremented once | `isMember` is false on the second call, so `leaveGroup` never runs again. |
 
 ---
 
@@ -225,14 +261,14 @@ The app starts on port `8080` by default (override with `-Dspring-boot.run.argum
 cd study-mate
 SEED_PATH="$(pwd)/src/test/resources/local-seed.sql"
 ./mvnw spring-boot:run -Dspring-boot.run.useTestClasspath=true \
-  -Dspring-boot.run.arguments="--spring.datasource.url=jdbc:h2:mem:devdb;DB_CLOSE_DELAY=-1 \
+  -Dspring-boot.run.arguments="--spring.datasource.url=jdbc:h2:mem:devdb;DB_CLOSE_DELAY=-1;NON_KEYWORDS=YEAR,DAY \
   --spring.datasource.driver-class-name=org.h2.Driver --spring.datasource.username=sa \
   --spring.datasource.password= --spring.jpa.hibernate.ddl-auto=create-drop \
   --spring.jpa.database-platform=org.hibernate.dialect.H2Dialect \
   --spring.jpa.defer-datasource-initialization=true --spring.sql.init.mode=always \
   --spring.sql.init.data-locations=file:$SEED_PATH --server.port=8081"
 ```
-This loads the sample fixture data in `src/test/resources/local-seed.sql` (2 students, 2 study groups) so `/api/find` and `/api/join` can be exercised immediately. H2 is used only for this convenience path and for the automated test suite — it is not the production datastore.
+`NON_KEYWORDS=YEAR,DAY` is needed because `year` (on `Student`) and `day` (on `TimeSlot`) are reserved words in H2 2.x; without it Hibernate cannot create the `student` and schedule tables and every request fails. This loads the sample fixture data in `src/test/resources/local-seed.sql` (2 students, 2 study groups) so `/api/find` and `/api/join` can be exercised immediately. H2 is used only for this convenience path and for the automated test suite — it is not the production datastore.
 
 ### Run the unit test suite (push-button)
 ```bash
@@ -246,7 +282,9 @@ Runs all JUnit Jupiter tests via Maven Surefire. The merged verification run inc
 cd study-mate
 # with the app already running per one of the "Run" sections above:
 BASE_URL=http://localhost:8081 ./scripts/api-test-find-join.sh
+BASE_URL=http://localhost:8081 ./scripts/api-test-leave.sh
 ```
+`api-test-leave.sh` covers `/api/leave` with 11 assertions: it first joins student 1 into group 1, then checks the leave success path (status, `numMembers` decremented, member removed), the idempotent retry, and every documented error status (`400`/`401`/`403`/`404`). The two scripts can be run in either order against the same running instance.
 This exercises `/api/find` and `/api/join` over real HTTP with 9 assertions covering the success path, both idempotency cases, and every documented error status (`400`/`401`/`404`). It prints a `PASS`/`FAIL` line per case and a final tally.
 
 ### Full verification (tests + style + static analysis + coverage)
@@ -263,7 +301,8 @@ cd study-mate
 - **Framework:** JUnit 5 + Mockito (`org.mockito:mockito-junit-jupiter`, via `spring-boot-starter-webmvc-test`/`spring-boot-starter-data-jpa-test`), AssertJ for fluent assertions.
 - **Location:** `study-mate/src/test/java/com/studymate/...` — one test class per service/controller:
   - `Controller/ApiControllerTest.java` — controller-level tests for `/api/find` and `/api/join`, with all four collaborator services mocked via `@Mock`/`@InjectMocks`.
-  - `service/MatchingServiceTest.java`, `service/StudyGroupServiceTest.java`, `service/StudyMateApiServiceTest.java` — service-level unit tests, mocking the repository layer so no real database is touched.
+  - `Controller/LeaveStudyGroupControllerTest.java` — controller-level tests for `/api/leave` (9 tests: 401, three 400 cases, two 404 cases, 403, idempotent not-a-member, success).
+  - `service/MatchingServiceTest.java`, `service/StudyGroupServiceTest.java` (includes 5 `leaveGroup` tests: removal + save, not-a-member no-op, duplicate ids, count floor at 0, recruiting flag unchanged), `service/StudyMateApiServiceTest.java` — service-level unit tests, mocking the repository layer so no real database is touched.
   - `StudyMateApplicationTests.java` — Spring context load smoke test.
 - Related tests are grouped by class (one class per unit under test) with shared `@BeforeEach` setup for fixture data, consistent with the assignment's grouping guidance.
 - **Config:** no extra config needed beyond `src/test/resources/application.properties` (point of truth for the H2 test datasource) — picked up automatically by Maven/Spring Boot's test classpath.
@@ -463,6 +502,19 @@ Tasks are tracked via **GitHub Issues / GitHub Projects** on the repository (htt
 
 **Estimated token usage (this component, this session):** ~400,000–600,000 tokens (combined input + output, including tool/command output consumed as context). This is a rough self-reported estimate based on session length and complexity, not an exact billing figure — for the precise number, pull actual usage from the Claude Code session cost report (`/cost`) or the Anthropic Console usage dashboard tied to the account used.
 
+### Leave Study Group component (Ziyue Fang)
+
+**Tool used:** Claude (Anthropic), Cowork mode, model Claude Opus 5.5, via Ziyue Fang's Claude account.
+
+**What it generated (all reviewed by Ziyue Fang and marked inline with `AI-generated` comments, following the team convention):**
+- `POST /api/leave` handler in `ApiController.java` and `StudyGroupService.leaveGroup()`.
+- `dto/LeaveGroupRequest.java`.
+- `Controller/LeaveStudyGroupControllerTest.java` and the `leaveGroup` tests at the end of `service/StudyGroupServiceTest.java`.
+- `scripts/api-test-leave.sh`.
+- The `/api/leave` parts of this README, plus the `NON_KEYWORDS=YEAR,DAY` fix to the local H2 run command (found while running the API tests).
+
+**Representative prompt:** "Implement my part (Leave Study Group): entity/repository/service logic, the endpoint, validation, failure cases, idempotency, unit tests with mocks, API tests, and the README section."
+
 ---
 
 ## 13. Final Verification (this component, pre-merge)
@@ -647,3 +699,19 @@ The live suite here focuses on creation, preferences, and matching.
 
 Results are generated under `study-mate/target/surefire-reports/`. A checked-in
 run summary and limitations are recorded in [reports/api-testing.md](reports/api-testing.md).
+
+### Leave Study Group (Ziyue Fang), on `ziyue/leave-group` branched from `harry/matching`
+
+```text
+./mvnw verify
+
+Tests run: 40, Failures: 0, Errors: 0, Skipped: 0
+Checkstyle violations: 0
+PMD violations: 0
+Branch coverage: 85.9% (79/92); StudyGroupService 100% (10/10)
+BUILD SUCCESS
+```
+
+`./scripts/api-test-leave.sh` against the local H2 instance: **11/11 passed**, and `./scripts/api-test-find-join.sh` still passes 9/9 on the same instance.
+
+**These numbers are branch-local.** They have not yet been combined with Kevin Chuang's, Hyunwoo Kim's, Ugorji Benjamin Barrah's, or Ziyue Fang's work (Register Student, Create Study Group, Register/Update Study Preference, Leave Study Group respectively) — that merge, and the corresponding re-run of `./mvnw verify` on `main`, is the next step before submission. 
