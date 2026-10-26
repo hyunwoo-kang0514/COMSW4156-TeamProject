@@ -23,6 +23,9 @@ import com.studymate.service.StudyGroupService;
 import com.studymate.service.StudyMateApiService;
 import org.springframework.web.bind.annotation.*;
 
+import com.studymate.dto.RegisterStudentRequest;
+import com.studymate.dto.RegisterStudentResponse;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +49,7 @@ public class ApiController {
     private final StudentService studentService;
     private final MatchingService matchingService;
     private final StudyGroupService studyGroupService;
+
 
 
     @GetMapping("/health")
@@ -81,6 +85,46 @@ public class ApiController {
         }
     }
 
+    @PostMapping("/students")
+    public ResponseEntity<?> registerStudent(@RequestBody RegisterStudentRequest request) {
+        try {
+            Student student = new Student();
+
+            student.setStudentId(request.getStudentId());
+            student.setName(request.getName());
+            student.setEmail(request.getEmail());
+            student.setSchool(request.getSchool());
+            student.setMajor(request.getMajor());
+            student.setYear(request.getYear());
+
+            Student registeredStudent = studentService.registerStudent(student);
+
+            RegisterStudentResponse response = new RegisterStudentResponse(
+                    registeredStudent.getId(),
+                    registeredStudent.getStudentId(),
+                    registeredStudent.getName(),
+                    registeredStudent.getEmail(),
+                    registeredStudent.getSchool(),
+                    registeredStudent.getMajor(),
+                    registeredStudent.getYear(),
+                    registeredStudent.getApiKey()
+            );
+
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(response);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
+
+        } catch (IllegalStateException e) {
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .body(e.getMessage());
+        }
+    }
 
     /**
      * Give a student a specific study preference

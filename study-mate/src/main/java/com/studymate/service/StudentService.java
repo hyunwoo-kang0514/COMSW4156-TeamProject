@@ -4,6 +4,7 @@ import com.studymate.domain.Student;
 import com.studymate.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import java.util.UUID;
 
 @Service
 public class StudentService {
@@ -23,5 +24,42 @@ public class StudentService {
      */
     public Student findStudentById(Long studentId) {
         return studentRepository.findById(studentId).orElse(null);
+    }
+
+    /**
+     * Register a new student.
+     *
+     * @param student student information
+     * @return registered student
+     */
+    public Student registerStudent(Student student) {
+
+        if (student == null
+                || student.getStudentId() == null
+                || student.getStudentId().isBlank()
+                || student.getName() == null
+                || student.getName().isBlank()
+                || student.getEmail() == null
+                || student.getEmail().isBlank()
+                || student.getSchool() == null
+                || student.getSchool().isBlank()
+                || student.getMajor() == null
+                || student.getMajor().isBlank()
+                || student.getYear() <= 0) {
+            throw new IllegalArgumentException("Invalid student information");
+        }
+
+        if (studentRepository.existsByStudentId(student.getStudentId())) {
+            throw new IllegalStateException("Student ID already registered");
+        }
+
+        String apiKey = UUID.randomUUID().toString();
+
+        while (studentRepository.existsByApiKey(apiKey)) {
+            apiKey = UUID.randomUUID().toString();
+        }
+
+        student.setApiKey(apiKey);
+        return studentRepository.save(student);
     }
 }

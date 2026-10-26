@@ -36,6 +36,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 
+import com.studymate.dto.RegisterStudentRequest;
+import com.studymate.dto.RegisterStudentResponse;
+
+
 @ExtendWith(MockitoExtension.class)
 public class ApiControllerTest {
 
@@ -436,4 +440,68 @@ public class ApiControllerTest {
     }
 
 
+    // ---------- POST /api/students : registerStudent ----------
+
+    @Test
+    void registerStudentSuccessReturnsCreated() {
+        // Arrange
+        RegisterStudentRequest request = new RegisterStudentRequest();
+        request.setStudentId("hc3689");
+        request.setName("Kevin");
+        request.setEmail("kevin@example.com");
+        request.setSchool("Columbia");
+        request.setMajor("Computer Science");
+        request.setYear(1);
+
+        when(studentService.registerStudent(any(Student.class)))
+                .thenReturn(student);
+
+        // Act
+        ResponseEntity<?> response = apiController.registerStudent(request);
+
+        // Assert
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(response.getBody())
+                .isInstanceOf(RegisterStudentResponse.class);
+
+        RegisterStudentResponse body =
+                (RegisterStudentResponse) response.getBody();
+
+        assertThat(body.getStudentId()).isEqualTo(student.getStudentId());
+        assertThat(body.getName()).isEqualTo(student.getName());
+        assertThat(body.getApiKey()).isEqualTo(student.getApiKey());
+        verify(studentService).registerStudent(any(Student.class));
+    }
+
+    @Test
+    void registerStudentWithInvalidInformationReturnsBadRequest() {
+        // Arrange
+        RegisterStudentRequest request = new RegisterStudentRequest();
+        request.setStudentId("hc3689");
+
+        when(studentService.registerStudent(any(Student.class)))
+                .thenThrow(new IllegalArgumentException("Invalid student information"));
+
+        // Act
+        ResponseEntity<?> response = apiController.registerStudent(request);
+
+        // Assert
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void registerStudentWithDuplicateIdReturnsConflict() {
+        // Arrange
+        RegisterStudentRequest request = new RegisterStudentRequest();
+        request.setStudentId("hc3689");
+
+        when(studentService.registerStudent(any(Student.class)))
+                .thenThrow(new IllegalStateException("Student ID already registered"));
+
+        // Act
+        ResponseEntity<?> response = apiController.registerStudent(request);
+
+        // Assert
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
 }
