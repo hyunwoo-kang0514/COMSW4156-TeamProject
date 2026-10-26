@@ -1,4 +1,4 @@
-package com.studymate.Controller;
+package com.studymate.controller;
 
 // AI-generated (Claude Code): this entire test class was written by AI and
 // reviewed/accepted by Hyunwoo Kang. See README "AI Documentation" section.
