@@ -32,7 +32,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 class StudyGroupCreationApiTests {
 
-  private static final String VALID_JSON = """
+  private static final String VALID_JSON =
+      """
       {
         "creatorStudentId": 7,
         "name": "Study Buddies",
@@ -52,11 +53,17 @@ class StudyGroupCreationApiTests {
   void setUp() {
     apiService = mock(StudyMateApiService.class);
     groupService = mock(StudyGroupService.class);
-    ApiController controller = new ApiController(mock(PreferenceService.class), apiService,
-        mock(StudentService.class), mock(MatchingService.class), groupService);
-    mvc = MockMvcBuilders.standaloneSetup(controller)
-        .setMessageConverters(new JacksonJsonHttpMessageConverter())
-        .build();
+    ApiController controller =
+        new ApiController(
+            mock(PreferenceService.class),
+            apiService,
+            mock(StudentService.class),
+            mock(MatchingService.class),
+            groupService);
+    mvc =
+        MockMvcBuilders.standaloneSetup(controller)
+            .setMessageConverters(new JacksonJsonHttpMessageConverter())
+            .build();
   }
 
   @Test
@@ -71,8 +78,11 @@ class StudyGroupCreationApiTests {
     saved.setRecruiting(true);
     when(groupService.createStudyGroup(any())).thenReturn(saved);
 
-    mvc.perform(post("/api/groups").header("X-API-KEY", "valid-key")
-            .contentType(MediaType.APPLICATION_JSON).content(VALID_JSON))
+    mvc.perform(
+            post("/api/groups")
+                .header("X-API-KEY", "valid-key")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(VALID_JSON))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.groupId").value(42))
         .andExpect(jsonPath("$.school").value("Columbia"))
@@ -102,16 +112,22 @@ class StudyGroupCreationApiTests {
   @ParameterizedTest
   @ValueSource(strings = {"", " "})
   void rejectsBlankKeyBeforeCallingValidator(String key) throws Exception {
-    mvc.perform(post("/api/groups").header("X-API-KEY", key)
-            .contentType(MediaType.APPLICATION_JSON).content(VALID_JSON))
+    mvc.perform(
+            post("/api/groups")
+                .header("X-API-KEY", key)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(VALID_JSON))
         .andExpect(status().isUnauthorized());
     verifyNoInteractions(apiService, groupService);
   }
 
   @Test
   void rejectsKeyWhenValidatorReturnsFalse() throws Exception {
-    mvc.perform(post("/api/groups").header("X-API-KEY", "invalid-key")
-            .contentType(MediaType.APPLICATION_JSON).content(VALID_JSON))
+    mvc.perform(
+            post("/api/groups")
+                .header("X-API-KEY", "invalid-key")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(VALID_JSON))
         .andExpect(status().isUnauthorized());
     verify(apiService).validateApiKey("invalid-key");
     verifyNoInteractions(groupService);
@@ -123,8 +139,11 @@ class StudyGroupCreationApiTests {
     when(groupService.createStudyGroup(any()))
         .thenThrow(new NoSuchElementException("Student not found for ID 7"));
 
-    mvc.perform(post("/api/groups").header("X-API-KEY", "valid-key")
-            .contentType(MediaType.APPLICATION_JSON).content(VALID_JSON))
+    mvc.perform(
+            post("/api/groups")
+                .header("X-API-KEY", "valid-key")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(VALID_JSON))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.error").value("Student not found for ID 7"));
   }
@@ -135,40 +154,64 @@ class StudyGroupCreationApiTests {
     when(groupService.createStudyGroup(any()))
         .thenThrow(new IllegalArgumentException("maxMembers must be at least 2."));
 
-    mvc.perform(post("/api/groups").header("X-API-KEY", "valid-key")
-            .contentType(MediaType.APPLICATION_JSON).content(VALID_JSON))
+    mvc.perform(
+            post("/api/groups")
+                .header("X-API-KEY", "valid-key")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(VALID_JSON))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.error").value("maxMembers must be at least 2."));
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {
-      "", "null", "{", "[]", "{\"creatorStudentId\":\"not-a-number\"}",
-      "{\"schedules\":[{\"day\":\"NOT_A_DAY\"}]}",
-      "{\"schedules\":[{\"startTime\":\"not-a-time\"}]}"
-  })
+  @ValueSource(
+      strings = {
+        "",
+        "null",
+        "{",
+        "[]",
+        "{\"creatorStudentId\":\"not-a-number\"}",
+        "{\"schedules\":[{\"day\":\"NOT_A_DAY\"}]}",
+        "{\"schedules\":[{\"startTime\":\"not-a-time\"}]}"
+      })
   void rejectsMissingOrMalformedJsonBeforeCallingService(String body) throws Exception {
-    mvc.perform(post("/api/groups").header("X-API-KEY", "valid-key")
-            .contentType(MediaType.APPLICATION_JSON).content(body))
+    mvc.perform(
+            post("/api/groups")
+                .header("X-API-KEY", "valid-key")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
         .andExpect(status().isBadRequest());
     verifyNoInteractions(apiService, groupService);
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {
-      "groupId", "school", "memberIds", "numMembers", "isRecruiting", "recruiting", "studySytles"
-  })
+  @ValueSource(
+      strings = {
+        "groupId",
+        "school",
+        "memberIds",
+        "numMembers",
+        "isRecruiting",
+        "recruiting",
+        "studySytles"
+      })
   void rejectsForbiddenOrMisspelledJsonFields(String field) throws Exception {
-    mvc.perform(post("/api/groups").header("X-API-KEY", "valid-key")
-            .contentType(MediaType.APPLICATION_JSON).content("{\"" + field + "\":null}"))
+    mvc.perform(
+            post("/api/groups")
+                .header("X-API-KEY", "valid-key")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"" + field + "\":null}"))
         .andExpect(status().isBadRequest());
     verifyNoInteractions(groupService);
   }
 
   @Test
   void rejectsUnsupportedContentType() throws Exception {
-    mvc.perform(post("/api/groups").header("X-API-KEY", "valid-key")
-            .contentType(MediaType.TEXT_PLAIN).content(VALID_JSON))
+    mvc.perform(
+            post("/api/groups")
+                .header("X-API-KEY", "valid-key")
+                .contentType(MediaType.TEXT_PLAIN)
+                .content(VALID_JSON))
         .andExpect(status().isUnsupportedMediaType());
     verifyNoInteractions(groupService);
   }
