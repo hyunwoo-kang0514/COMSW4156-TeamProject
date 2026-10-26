@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<checkstyle version="9.3">
+<file name="study-mate/src/main/java/com/studymate/dto/JoinGroupRequest.java">
+</file>
+<file name="study-mate/src/main/java/com/studymate/dto/LeaveGroupRequest.java">
+</file>
+<file name="study-mate/src/main/java/com/studymate/dto/RegisterStudentResponse.java">
+</file>
+<file name="study-mate/src/main/java/com/studymate/dto/RegisterStudentRequest.java">
+</file>
+<file name="study-mate/src/main/java/com/studymate/repository/StudentRepository.java">
+</file>
+<file name="study-mate/src/main/java/com/studymate/repository/PreferenceRepository.java">
+</file>
+<file name="study-mate/src/main/java/com/studymate/repository/StudyGroupRepository.java">
+</file>
+<file name="study-mate/src/main/java/com/studymate/repository/MatchResultRepository.java">
+</file>
+<file name="study-mate/src/main/java/com/studymate/controller/ApiController.java">
+</file>
+<file name="study-mate/src/main/java/com/studymate/StudyMateApplication.java">
+</file>
+<file name="study-mate/src/main/java/com/studymate/request/CreateStudyGroupRequest.java">
+</file>
+<file name="study-mate/src/main/java/com/studymate/service/StudentService.java">
+</file>
+<file name="study-mate/src/main/java/com/studymate/service/MatchingService.java">
+</file>
+<file name="study-mate/src/main/java/com/studymate/service/StudyMateApiService.java">
+</file>
+<file name="study-mate/src/main/java/com/studymate/service/StudyGroupService.java">
+</file>
+<file name="study-mate/src/main/java/com/studymate/service/PreferenceService.java">
+</file>
+<file name="study-mate/src/main/java/com/studymate/domain/Preference.java">
+</file>
+<file name="study-mate/src/main/java/com/studymate/domain/TimeSlot.java">
+</file>
+<file name="study-mate/src/main/java/com/studymate/domain/MatchResult.java">
+</file>
+<file name="study-mate/src/main/java/com/studymate/domain/StudyGroup.java">
+</file>
+<file name="study-mate/src/main/java/com/studymate/domain/Student.java">
+</file>
+<file name="study-mate/src/test/java/com/studymate/StudyMateApplicationTests.java">
+</file>
+<file name="study-mate/src/test/java/com/studymate/controller/LeaveStudyGroupControllerTest.java">
+</file>
+<file name="study-mate/src/test/java/com/studymate/controller/ApiControllerTest.java">
+</file>
+<file name="study-mate/src/test/java/com/studymate/controller/StudyGroupCreationApiTests.java">
+</file>
+<file name="study-mate/src/test/java/com/studymate/RegisterStudentIntegrationTest.java">
+</file>
+<file name="study-mate/src/test/java/com/studymate/api/LiveStudyMateApiTests.java">
+</file>
+<file name="study-mate/src/test/java/com/studymate/request/CreateStudyGroupRequestTests.java">
+</file>
+<file name="study-mate/src/test/java/com/studymate/service/StudyMateApiServiceTest.java">
+</file>
+<file name="study-mate/src/test/java/com/studymate/service/StudyGroupCreationTests.java">
+</file>
+<file name="study-mate/src/test/java/com/studymate/service/PreferenceServiceTest.java">
+</file>
+<file name="study-mate/src/test/java/com/studymate/service/StudyGroupServiceTest.java">
+</file>
+<file name="study-mate/src/test/java/com/studymate/service/MatchingServiceTest.java">
+</file>
+<file name="study-mate/src/test/java/com/studymate/service/StudentServiceTest.java">
+</file>
+<file name="study-mate/src/main/resources/application.properties">
+</file>
+<file name="study-mate/src/test/resources/application-api.properties">
+</file>
+<file name="study-mate/src/test/resources/application.properties">
+</file>
+</checkstyle>

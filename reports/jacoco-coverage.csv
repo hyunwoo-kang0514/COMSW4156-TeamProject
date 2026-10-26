@@ -1,0 +1,16 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+,com.studymate.dto,JoinGroupRequest,0,3,0,0,0,1,0,1,0,1
+,com.studymate.dto,LeaveGroupRequest,0,3,0,0,0,1,0,1,0,1
+,com.studymate.dto,RegisterStudentRequest,0,3,0,0,0,1,0,1,0,1
+,com.studymate.service,PreferenceService,0,141,0,2,0,34,0,8,0,7
+,com.studymate.service,StudyGroupService,0,433,1,59,0,92,1,42,0,13
+,com.studymate.service,StudyMateApiService,0,11,0,0,0,4,0,2,0,2
+,com.studymate.service,StudentService,4,87,11,17,1,23,11,6,0,3
+,com.studymate.service,MatchingService,6,255,4,40,2,62,4,23,0,5
+,com.studymate.controller,ApiController,0,364,0,44,0,88,0,31,0,9
+,com.studymate.domain,Student,0,3,0,0,0,1,0,1,0,1
+,com.studymate.domain,MatchResult,3,0,0,0,1,0,1,0,1,0
+,com.studymate.domain,StudyGroup,0,3,0,0,0,1,0,1,0,1
+,com.studymate.domain,TimeSlot,0,3,0,0,0,1,0,1,0,1
+,com.studymate,StudyMateApplication,5,3,0,0,2,1,1,1,1,1
+,com.studymate.request,CreateStudyGroupRequest,0,9,0,0,0,2,0,2,0,2
