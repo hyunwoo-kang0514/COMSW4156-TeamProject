@@ -715,7 +715,7 @@ usage records for the assignment's team-wide accounting.
 |---|---|---|---|
 | Hyunwoo Kang | Find / Join Study Group | Claude Code | ~400,000–600,000 (estimate) |
 | Ziyue Fang | Leave Study Group | Claude (Cowork, Opus 5.5) | Not recorded |
-| Hyunwoo Kim | Create Study Group | None reported | 0 |
+| Hyunwoo Kim | Create Study Group | Codex | ~100,000-200,000 |
 | Kevin Chuang | Register Student | None reported | 0 |
 | Ugo Barrah | Study Preference | None reported | 0 |
 
