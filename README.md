@@ -679,15 +679,30 @@ AI-generated. Prompt: "add tests configured for PostgreSQL and commit".
 This session's token total is not exposed to this task; it has not been
 estimated or invented and still needs to be supplied from account/session
 usage records for the assignment's team-wide accounting.
+
 ### Create Study Group component (Hyunwoo Kim)
 
-**Tool used:** None reported. No AI tool usage was reported for this component in Iteration 1.
+**Tool used:** OpenAI Codex through the Codex application.
 
-**AI-generated or AI-debugged code:** None reported. None of this component's files carry an `AI-generated` / `AI-fixed` marker. Files in this component: `POST /api/groups` handler in `ApiController.java`, `StudyGroupService` group-creation logic, `request/CreateStudyGroupRequest.java`, `request/CreateStudyGroupRequestTests.java`, `service/StudyGroupCreationTests.java`, `controller/StudyGroupCreationApiTests.java`, `api/LiveStudyMateApiTests.java`, and the `/api/groups` parts of this README.
+**What it generated (reviewed by Hyunwoo Kim and marked inline with `AI-generated` comments in this example):**
 
-**Representative prompts:** N/A.
+- `POST /api/groups` handler in `ApiController.java`, including request handling and HTTP error responses.
+- Group-creation logic in `StudyGroupService`, including input validation, creator membership, and database persistence.
+- `request/CreateStudyGroupRequest.java`, defining accepted input fields and rejecting server-controlled fields.
+- `request/CreateStudyGroupRequestTests.java`, `service/StudyGroupCreationTests.java`, and `controller/StudyGroupCreationApiTests.java`.
+- `api/LiveStudyMateApiTests.java`, exercising endpoints through HTTP and checking saved data.
+- `api/PostgresStudyMateApiIt.java`, PostgreSQL test configuration, and Maven/CI settings for running API tests against PostgreSQL.
+- README documentation covering endpoint inputs, outputs, status codes, side effects, example requests, and test instructions.
 
-**Estimated token usage:** 0 reported.
+**Representative example prompts:**
+
+- “Create a request class for study-group creation. Accept the group name, course, capacity, schedules, study styles, meeting mode, and creator ID. Reject server-controlled fields.”
+- “Implement group creation in `StudyGroupService`. Validate the input, add the creator as the first member, and save the group.”
+- “Add `POST /api/groups` to `ApiController`, following our existing conventions. Return appropriate success and error responses.”
+- “Isolate each PostgreSQL test run in a temporary schema and remove it afterward.”
+- “Document the endpoint’s inputs, outputs, errors, side effects, and example usage in the README.”
+
+**Illustrative token usage:** 100,000-200,000 tokens. 
 
 ### Register Student component (Kevin Chuang)
 
