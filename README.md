@@ -691,9 +691,8 @@ OpenAI Codex was used through the Codex application to add
 `PostgresStudyMateApiIt.java`, the PostgreSQL test profile, Maven Failsafe/CI
 configuration, and their documentation. The Java test file is marked
 AI-generated. Prompt: "add tests configured for PostgreSQL and commit".
-This session's token total is not exposed to this task; it has not been
-estimated or invented and still needs to be supplied from account/session
-usage records for the assignment's team-wide accounting.
+Hyunwoo Kim's self-reported token estimate for all Codex work is in the
+token usage summary below.
 
 ### Register Student component (Kevin Chuang)
 
