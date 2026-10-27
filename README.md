@@ -718,11 +718,11 @@ token usage summary below.
 
 | Member | Component | Tool | Total tokens |
 |---|---|---|---|
-| Hyunwoo Kang | Find / Join Study Group | Claude Code (Anthropic) | ~400,000–600,000 (estimate) |
-| Ziyue Fang | Leave Study Group, iteration 1 fixes | Claude Opus 5.5 (Anthropic) | ~6,000,000 |
-| Hyunwoo Kim | Create Study Group, live and PostgreSQL API tests | OpenAI Codex | ~100,000–200,000 (self-reported estimate) |
-| Kevin Chuang | Register Student | None (no AI use reported) | 0 |
-| Ugorji Benjamin Barrah | Study Preference | None (no AI use reported) | 0 |
+| Hyunwoo Kang | Find / Join Study Group | Claude Code | ~400,000–600,000 (estimate) |
+| Ziyue Fang | Leave Study Group | Claude (Cowork, Opus 5.5) | Not recorded |
+| Hyunwoo Kim | Create Study Group | Codex | ~100,000-200,000 |
+| Kevin Chuang | Register Student | None reported | 0 |
+| Ugo Barrah | Study Preference | None reported | 0 |
 
 ---
 
