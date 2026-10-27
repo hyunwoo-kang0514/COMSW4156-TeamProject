@@ -538,9 +538,23 @@ No other third-party source code is copied into the repository. Libraries and to
 
 ## 11. Project Management
 
-Tasks for each team member are tracked with **GitHub Issues / GitHub Projects** on the repository (https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject). The owner of each component is listed in the table under [Authors / Team Members](#authors--team-members) and in [Section 1](#1-implementation-status-this-iteration--mvp), and every component was developed on its own branch and merged through a pull request.
+Tasks for each team member are tracked with **GitHub Issues** and a **GitHub Projects** board:
 
-*(TODO before submission: add the Project board URL here and confirm the Mentor and Instructor have access.)*
+- **Project board:** [StudyMate — Iteration 1](https://github.com/users/hyunwoo-kang0514/projects/1/views/1) (public, so the Mentor and Instructor can view it). Each issue shows its assignee, status (Todo / In Progress / Done) and linked pull requests.
+- **Issues:** https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues?q=is%3Aissue
+
+| Issue | Task | Owner |
+|---|---|---|
+| #10 | Project setup: Spring Boot, PostgreSQL/Supabase, H2 test config, CI | Hyunwoo Kang |
+| #11 | Find Compatible Study Groups (`GET /api/find`) | Hyunwoo Kang |
+| #13 | Join Study Group (`POST /api/join`) | Hyunwoo Kang |
+| #12 | Register Student (`POST /api/students`) | Kevin Chuang |
+| #14 | Register / Update / Get Study Preference | Ugorji Benjamin Barrah |
+| #15 | Create Study Group (`POST /api/groups`) | Hyunwoo Kim |
+| #16 | Leave Study Group (`POST /api/leave`) | Ziyue Fang |
+| #17 | Iteration 1 cleanup: Checkstyle, preference 404 fixes, reports | Ziyue Fang |
+
+Every component was developed on its own branch and merged into `main` through a pull request.
 
 ---
 
