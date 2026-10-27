@@ -585,22 +585,25 @@ No other third-party source code is copied into the repository. Libraries and to
 
 ## 11. Project Management
 
-Tasks for each team member are tracked with **GitHub Issues / GitHub Projects** on the repository (https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject). The owner of each component is listed in the table under [Authors / Team Members](#authors--team-members) and in [Section 1](#1-implementation-status-this-iteration--mvp), and every component was developed on its own branch and merged through a pull request.
+Tasks for each team member are tracked with **GitHub Issues** and a **GitHub Projects** board:
 
-**Project board:** [StudyMate — Iteration 1](https://github.com/users/hyunwoo-kang0514/projects/1) (public, linked to this repository, so the Mentor and Instructor can view it without an invite).
+- **Project board:** [StudyMate — Iteration 1](https://github.com/users/hyunwoo-kang0514/projects/1/views/1) (public and linked to this repository, so the Mentor and Instructor can view it without an invite). Each issue shows its assignee, status (Todo / In Progress / Done) and linked pull requests.
+- **Issues:** https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues?q=is%3Aissue
 
 | Issue | Task | Owner |
 |---|---|---|
-| [#10](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/10) | Project setup: Spring Boot skeleton, PostgreSQL/Supabase connection, H2 test config, CI | @hyunwoo-kang0514 |
-| [#11](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/11) | Find Compatible Study Groups (`GET /api/find`) | @hyunwoo-kang0514 |
-| [#12](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/12) | Register Student (`POST /api/students`) | @kchua220 |
-| [#13](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/13) | Join Study Group (`POST /api/join`) | @hyunwoo-kang0514 |
-| [#14](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/14) | Register / Update / Get Study Preference | @ubb2000 |
-| [#15](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/15) | Create Study Group (`POST /api/groups`) | @hywkim-brian |
-| [#16](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/16) | Leave Study Group (`POST /api/leave`) | @Tobbs2005 |
-| [#17](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/17) | Iteration 1 cleanup: Checkstyle-clean codebase, preference 404 fixes, refreshed reports | @Tobbs2005 |
-| [#18](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/18) | Document AI usage for every component | @hywkim-brian, @kchua220, @ubb2000 |
-| [#19](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/19) | Tag the first-iteration release on `main` | Team |
+| [#10](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/10) | Project setup: Spring Boot, PostgreSQL/Supabase, H2 test config, CI | Hyunwoo Kang (hyunwoo-kang0514) |
+| [#11](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/11) | Find Compatible Study Groups (`GET /api/find`) | Hyunwoo Kang (hyunwoo-kang0514) |
+| [#12](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/12) | Register Student (`POST /api/students`) | Kevin Chuang (kchua220) |
+| [#13](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/13) | Join Study Group (`POST /api/join`) | Hyunwoo Kang (hyunwoo-kang0514) |
+| [#14](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/14) | Register / Update / Get Study Preference | Ugorji Benjamin Barrah (ubb2000) |
+| [#15](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/15) | Create Study Group (`POST /api/groups`) | Hyunwoo Kim (hywkim-brian) |
+| [#16](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/16) | Leave Study Group (`POST /api/leave`) | Ziyue Fang (Tobbs2005) |
+| [#17](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/17) | Iteration 1 cleanup: Checkstyle, preference 404 fixes, reports | Ziyue Fang (Tobbs2005) |
+| [#18](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/18) | Document AI usage for every component | All members |
+| [#19](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/19) | Tag the first-iteration release on `main` | All members |
+
+Every component was developed on its own branch and merged into `main` through a pull request.
 
 ---
 
@@ -630,7 +633,7 @@ Tasks for each team member are tracked with **GitHub Issues / GitHub Projects** 
 
 ### Leave Study Group component (Ziyue Fang)
 
-**Tool used:** Claude (Anthropic), Cowork mode, model Claude Opus 5.5, via Ziyue Fang's Claude account.
+**Tool used:** Claude (Anthropic), model Claude Opus 5.5, via Ziyue Fang's Claude account.
 
 **What it generated (all reviewed by Ziyue Fang and marked inline with `AI-generated` comments, following the team convention):**
 - `POST /api/leave` handler in `ApiController.java` and `StudyGroupService.leaveGroup()`.
@@ -638,10 +641,22 @@ Tasks for each team member are tracked with **GitHub Issues / GitHub Projects** 
 - `controller/LeaveStudyGroupControllerTest.java` and the `leaveGroup` tests at the end of `service/StudyGroupServiceTest.java`.
 - `scripts/api-test-leave.sh`.
 - The `/api/leave` parts of this README, plus the `NON_KEYWORDS=YEAR,DAY` fix to the local H2 run command (found while running the API tests).
+- The preference 404 fix: `POST /api/`, `PUT /api/{id}` and `GET /api/{id}` now return 404 for a missing student or preference (and 400 for a body without an id) instead of a 500, and `POST /api/` now works over HTTP. Changes are in `PreferenceService.java` and the three preference handlers in `ApiController.java`, with new tests in `PreferenceServiceTest.java` and `LiveStudyMateApiTests.java`.
+- The identity counter restart in `src/test/resources/local-seed.sql`, so new students and groups can be created on the local H2 instance.
+- The Checkstyle cleanup (commit `ffa913c`): reformatting every main and test source file to Google Java Style, adding missing class Javadoc, and replacing star imports. These changes are formatting and Javadoc only and don't change behavior, so those files aren't marked line by line. The `pom.xml` setting that makes any Checkstyle warning fail the build is marked.
 
-**Representative prompt:** "Implement my part (Leave Study Group): entity/repository/service logic, the endpoint, validation, failure cases, idempotency, unit tests with mocks, API tests, and the README section."
+**Prompts used:**
 
-### Group creation and API testing (OpenAI Codex)
+1. Understand first: "Read the `harry/matching` branch, especially `/api/join`, `StudyGroupService.joinGroup()`, the entities and tests. Summarize the conventions I should follow and which tables and columns leaving a group touches. Don't write code yet."
+2. Design the contract: "Propose the API contract for Leave Study Group: method/path, request body and status codes. List every failure case (student or group missing, not a member, owner leaving, last member, repeated requests) with a status code for each, and justify 400 vs 404 vs 403. Keep it consistent with `/api/join`."
+3. Implement in steps: "Implement the DTO and `leaveGroup()` service first, then the controller, based on the contract we agreed on. Make sure the membership change actually persists (join had a missing `save()` bug). Show me the diff after each step."
+4. Test deliberately: "Write a test plan covering every failure case, then implement unit tests (mocked repos, MockMvc) and a cURL script that checks the row is really gone. Run `./mvnw verify` and report any uncovered branches."
+5. Review and document: "Review your code as a strict reviewer (races, error consistency, Checkstyle/PMD). Then split the work into commits that each compile, write the README section in the `/api/join` format, and list the open questions I should bring to the team."
+6. Bug check and Checkstyle fixes: "Now that every component is merged, run each endpoint over HTTP against the local H2 instance and list anything that returns a 500 or doesn't match the README. Fix the bugs you find with a failing test first. Then make the whole codebase, including tests, Checkstyle-clean under Google style without changing behavior, and make `./mvnw verify` fail on any Checkstyle warning."
+
+**Token usage (this component):** about 6,000,000 tokens total (input + output) across all of the prompts above.
+
+### Create Study Group component and API testing (Hyunwoo Kim, OpenAI Codex)
 
 OpenAI Codex was used through the Codex application to generate the group-creation
 request, the creation endpoint, the service's creation and validation methods,
@@ -670,7 +685,7 @@ Representative prompts from this collaboration:
 - "can you do the API testing part now"
 - "add tests configured for PostgreSQL and commit"
 
-### PostgreSQL API test configuration (OpenAI Codex)
+### PostgreSQL API test configuration (Hyunwoo Kim, OpenAI Codex)
 
 OpenAI Codex was used through the Codex application to add
 `PostgresStudyMateApiIt.java`, the PostgreSQL test profile, Maven Failsafe/CI
@@ -679,31 +694,22 @@ AI-generated. Prompt: "add tests configured for PostgreSQL and commit".
 This session's token total is not exposed to this task; it has not been
 estimated or invented and still needs to be supplied from account/session
 usage records for the assignment's team-wide accounting.
-### Create Study Group component (Hyunwoo Kim)
-
-**Tool used:** None reported. No AI tool usage was reported for this component in Iteration 1.
-
-**AI-generated or AI-debugged code:** None reported. None of this component's files carry an `AI-generated` / `AI-fixed` marker. Files in this component: `POST /api/groups` handler in `ApiController.java`, `StudyGroupService` group-creation logic, `request/CreateStudyGroupRequest.java`, `request/CreateStudyGroupRequestTests.java`, `service/StudyGroupCreationTests.java`, `controller/StudyGroupCreationApiTests.java`, `api/LiveStudyMateApiTests.java`, and the `/api/groups` parts of this README.
-
-**Representative prompts:** N/A.
-
-**Estimated token usage:** 0 reported.
 
 ### Register Student component (Kevin Chuang)
 
 **Tool used:** None reported. No AI tool usage was reported for this component in Iteration 1.
 
-**AI-generated or AI-debugged code:** None reported. None of this component's files carry an `AI-generated` / `AI-fixed` marker. Files in this component: `POST /api/students` handler in `ApiController.java`, `StudentService` registration logic, `StudentRepository`, `dto/RegisterStudentRequest.java`, `dto/RegisterStudentResponse.java`, `service/StudentServiceTest.java`, `RegisterStudentIntegrationTest.java`, and the `/api/students` parts of this README.
+**AI-generated or AI-debugged code:** None reported for this component's own code. AI markers that appear in shared files (such as `ApiController.java`) belong to the other components documented above. Files in this component: `POST /api/students` handler in `ApiController.java`, `StudentService` registration logic, `StudentRepository`, `dto/RegisterStudentRequest.java`, `dto/RegisterStudentResponse.java`, `service/StudentServiceTest.java`, `RegisterStudentIntegrationTest.java`, and the `/api/students` parts of this README.
 
 **Representative prompts:** N/A.
 
 **Estimated token usage:** 0 reported.
 
-### Study Preference component (Ugo Barrah)
+### Study Preference component (Ugorji Benjamin Barrah)
 
 **Tool used:** None reported. No AI tool usage was reported for this component in Iteration 1.
 
-**AI-generated or AI-debugged code:** None reported. None of this component's files carry an `AI-generated` / `AI-fixed` marker. Files in this component: preference handlers (`POST /api/`, `PUT /api/{id}`, `GET /api/{id}`) in `ApiController.java`, `service/PreferenceService.java`, `repository/PreferenceRepository.java`, `domain/Preference.java`, `service/PreferenceServiceTest.java`, and the preference parts of this README.
+**AI-generated or AI-debugged code:** None reported for this component's original implementation. The later preference 404 fix in these files was AI-generated and is documented and marked under the Leave Study Group (Ziyue Fang) section above. Files in this component: preference handlers (`POST /api/`, `PUT /api/{id}`, `GET /api/{id}`) in `ApiController.java`, `service/PreferenceService.java`, `repository/PreferenceRepository.java`, `domain/Preference.java`, `service/PreferenceServiceTest.java`, and the preference parts of this README.
 
 **Representative prompts:** N/A.
 
@@ -713,11 +719,11 @@ usage records for the assignment's team-wide accounting.
 
 | Member | Component | Tool | Total tokens |
 |---|---|---|---|
-| Hyunwoo Kang | Find / Join Study Group | Claude Code | ~400,000–600,000 (estimate) |
-| Ziyue Fang | Leave Study Group | Claude (Cowork, Opus 5.5) | Not recorded |
-| Hyunwoo Kim | Create Study Group | None reported | 0 |
-| Kevin Chuang | Register Student | None reported | 0 |
-| Ugo Barrah | Study Preference | None reported | 0 |
+| Hyunwoo Kang | Find / Join Study Group | Claude Code (Anthropic) | ~400,000–600,000 (estimate) |
+| Ziyue Fang | Leave Study Group, iteration 1 fixes | Claude Opus 5.5 (Anthropic) | ~6,000,000 |
+| Hyunwoo Kim | Create Study Group, live and PostgreSQL API tests | OpenAI Codex | Not recorded (the Codex app did not expose a token total) |
+| Kevin Chuang | Register Student | None (no AI use reported) | 0 |
+| Ugorji Benjamin Barrah | Study Preference | None (no AI use reported) | 0 |
 
 ---
 

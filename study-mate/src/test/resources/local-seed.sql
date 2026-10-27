@@ -38,6 +38,7 @@ INSERT INTO study_group_study_styles (study_group_group_id, study_styles) VALUES
   (1, 'focused'),
   (2, 'independent');
 
+-- AI-generated (Claude Code), reviewed by Ziyue Fang: identity counter restart.
 -- The rows above use explicit ids, which does not advance the identity counters.
 -- Restart them past the seeded ids so POST /api/students and POST /api/groups
 -- can insert new rows without a primary-key collision.

@@ -44,6 +44,7 @@ class PreferenceServiceTest {
     return p;
   }
 
+  // AI-generated (Claude Code), reviewed by Ziyue Fang. See README "AI Documentation".
   @Test
   void add_newPreference_copiesValuesAndAttachesStudent() {
     TimeSlot slot = mock(TimeSlot.class);
@@ -64,6 +65,7 @@ class PreferenceServiceTest {
     assertEquals(List.of(slot), result.getAvailableTimes());
   }
 
+  // AI-generated (Claude Code), reviewed by Ziyue Fang. See README "AI Documentation".
   @Test
   void add_existingPreference_isReplacedInPlace() {
     Preference existing = preference("CS101", "ONLINE", 2, "FLASHCARDS", mock(TimeSlot.class));
@@ -81,6 +83,7 @@ class PreferenceServiceTest {
     verify(preferenceRepository).save(existing);
   }
 
+  // AI-generated (Claude Code), reviewed by Ziyue Fang. See README "AI Documentation".
   @Test
   void add_studentNotFound_throws() {
     Preference input = new Preference();
@@ -96,6 +99,7 @@ class PreferenceServiceTest {
     verify(preferenceRepository, never()).save(any());
   }
 
+  // AI-generated (Claude Code), reviewed by Ziyue Fang. See README "AI Documentation".
   @Test
   void add_missingId_throws() {
     assertThrows(

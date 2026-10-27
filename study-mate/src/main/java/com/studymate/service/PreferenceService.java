@@ -31,6 +31,7 @@ public class PreferenceService {
    */
   @Transactional
   public Preference addStudentStudyPreferences(Preference preference) {
+    // AI-fixed (Claude Code), reviewed by Ziyue Fang. See README "AI Documentation".
     if (preference.getId() == null) {
       throw new IllegalArgumentException("id is required and must be an existing student id.");
     }
@@ -58,6 +59,7 @@ public class PreferenceService {
    * @throws NoSuchElementException if no preference or student exists for the id
    */
   public Preference updateStudentStudyPreferences(Long id, Preference preference) {
+    // AI-fixed (Claude Code), reviewed by Ziyue Fang. See README "AI Documentation".
     Preference updatedPreference =
         preferenceRepository
             .findById(id)
@@ -85,6 +87,7 @@ public class PreferenceService {
    * @throws NoSuchElementException if no preference exists for the id
    */
   public Preference getStudentStudyPreferences(Long id) {
+    // AI-fixed (Claude Code), reviewed by Ziyue Fang. See README "AI Documentation".
     Preference gottenPreference =
         preferenceRepository
             .findById(id)
