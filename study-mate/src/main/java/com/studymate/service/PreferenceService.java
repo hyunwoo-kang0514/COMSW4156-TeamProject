@@ -58,6 +58,7 @@ public class PreferenceService {
    * @return the updated preference
    * @throws NoSuchElementException if no preference or student exists for the id
    */
+  // Partially AI-fixed (Claude)
   public Preference updateStudentStudyPreferences(Long id, Preference preference) {
     // AI-fixed (Claude Code), reviewed by Ziyue Fang. See README "AI Documentation".
     Preference updatedPreference =

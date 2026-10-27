@@ -1,5 +1,7 @@
 package com.studymate.controller;
 
+// AI-generated with OpenAI Codex; see README "AI Documentation".
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;

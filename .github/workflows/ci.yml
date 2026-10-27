@@ -26,9 +26,9 @@ jobs:
           --health-retries=5
 
     env:
-      DB_URL: jdbc:postgresql://localhost:5432/studymate
-      DB_USERNAME: postgres
-      DB_PASSWORD: postgres
+      POSTGRES_TEST_URL: jdbc:postgresql://localhost:5432/studymate
+      POSTGRES_TEST_USERNAME: postgres
+      POSTGRES_TEST_PASSWORD: postgres
 
     steps:
       - name: Checkout repository
@@ -43,4 +43,4 @@ jobs:
 
       - name: Run Maven verify
         working-directory: study-mate
-        run: ./mvnw verify
+        run: ./mvnw -Ppostgres-api verify

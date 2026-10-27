@@ -16,6 +16,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+// Partially AI-fixed (Claude)
 /** A student's study preference; shares its primary key with the owning {@link Student}. */
 @Getter
 @Setter

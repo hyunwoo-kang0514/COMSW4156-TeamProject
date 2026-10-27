@@ -24,6 +24,8 @@ public class CreateStudyGroupRequest {
    *
    * <p>This also rejects unknown fields when the JSON mapper normally ignores them.
    *
+   * <p>AI-generated with OpenAI Codex.
+   *
    * @param fieldName the unrecognized JSON field
    * @param value the supplied value, which is never accepted or stored
    * @throws IllegalArgumentException whenever an unrecognized field is supplied

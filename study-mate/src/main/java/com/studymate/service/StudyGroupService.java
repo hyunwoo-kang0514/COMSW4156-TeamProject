@@ -31,6 +31,8 @@ public class StudyGroupService {
   /**
    * Creates and saves a recruiting study group with the creator as its first member.
    *
+   * <p>AI-generated with OpenAI Codex.
+   *
    * @param request the caller-provided group details and creator's numeric database ID
    * @return the saved group, including its generated group ID
    * @throws IllegalArgumentException if required information or group values are invalid
@@ -75,6 +77,8 @@ public class StudyGroupService {
 
   /**
    * Validates weekly time slots and copies them without retaining mutable request objects.
+   *
+   * <p>AI-generated with OpenAI Codex.
    *
    * @param schedules the requested weekly meeting times
    * @return independent, valid time slots
@@ -135,6 +139,8 @@ public class StudyGroupService {
 
   /**
    * Requires a text value and removes surrounding whitespace.
+   *
+   * <p>AI-generated with OpenAI Codex.
    *
    * @param value the text to validate
    * @param fieldName the field identified in a validation error

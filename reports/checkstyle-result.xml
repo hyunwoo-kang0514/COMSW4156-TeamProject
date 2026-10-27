@@ -1,77 +1,81 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <checkstyle version="9.3">
-<file name="study-mate/src/main/java/com/studymate/dto/JoinGroupRequest.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/dto/JoinGroupRequest.java">
 </file>
-<file name="study-mate/src/main/java/com/studymate/dto/LeaveGroupRequest.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/dto/LeaveGroupRequest.java">
 </file>
-<file name="study-mate/src/main/java/com/studymate/dto/RegisterStudentResponse.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/dto/RegisterStudentResponse.java">
 </file>
-<file name="study-mate/src/main/java/com/studymate/dto/RegisterStudentRequest.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/dto/RegisterStudentRequest.java">
 </file>
-<file name="study-mate/src/main/java/com/studymate/repository/StudentRepository.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/repository/StudentRepository.java">
 </file>
-<file name="study-mate/src/main/java/com/studymate/repository/PreferenceRepository.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/repository/PreferenceRepository.java">
 </file>
-<file name="study-mate/src/main/java/com/studymate/repository/StudyGroupRepository.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/repository/StudyGroupRepository.java">
 </file>
-<file name="study-mate/src/main/java/com/studymate/repository/MatchResultRepository.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/repository/MatchResultRepository.java">
 </file>
-<file name="study-mate/src/main/java/com/studymate/controller/ApiController.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/controller/ApiController.java">
 </file>
-<file name="study-mate/src/main/java/com/studymate/StudyMateApplication.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/StudyMateApplication.java">
 </file>
-<file name="study-mate/src/main/java/com/studymate/request/CreateStudyGroupRequest.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/request/CreateStudyGroupRequest.java">
 </file>
-<file name="study-mate/src/main/java/com/studymate/service/StudentService.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/service/StudentService.java">
 </file>
-<file name="study-mate/src/main/java/com/studymate/service/MatchingService.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/service/MatchingService.java">
 </file>
-<file name="study-mate/src/main/java/com/studymate/service/StudyMateApiService.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/service/StudyMateApiService.java">
 </file>
-<file name="study-mate/src/main/java/com/studymate/service/StudyGroupService.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/service/StudyGroupService.java">
 </file>
-<file name="study-mate/src/main/java/com/studymate/service/PreferenceService.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/service/PreferenceService.java">
 </file>
-<file name="study-mate/src/main/java/com/studymate/domain/Preference.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/domain/Preference.java">
 </file>
-<file name="study-mate/src/main/java/com/studymate/domain/TimeSlot.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/domain/TimeSlot.java">
 </file>
-<file name="study-mate/src/main/java/com/studymate/domain/MatchResult.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/domain/MatchResult.java">
 </file>
-<file name="study-mate/src/main/java/com/studymate/domain/StudyGroup.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/domain/StudyGroup.java">
 </file>
-<file name="study-mate/src/main/java/com/studymate/domain/Student.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/java/com/studymate/domain/Student.java">
 </file>
-<file name="study-mate/src/test/java/com/studymate/StudyMateApplicationTests.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/test/java/com/studymate/StudyMateApplicationTests.java">
 </file>
-<file name="study-mate/src/test/java/com/studymate/controller/LeaveStudyGroupControllerTest.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/test/java/com/studymate/controller/LeaveStudyGroupControllerTest.java">
 </file>
-<file name="study-mate/src/test/java/com/studymate/controller/ApiControllerTest.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/test/java/com/studymate/controller/ApiControllerTest.java">
 </file>
-<file name="study-mate/src/test/java/com/studymate/controller/StudyGroupCreationApiTests.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/test/java/com/studymate/controller/StudyGroupCreationApiTests.java">
 </file>
-<file name="study-mate/src/test/java/com/studymate/RegisterStudentIntegrationTest.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/test/java/com/studymate/RegisterStudentIntegrationTest.java">
 </file>
-<file name="study-mate/src/test/java/com/studymate/api/LiveStudyMateApiTests.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/test/java/com/studymate/api/PostgresStudyMateApiIt.java">
 </file>
-<file name="study-mate/src/test/java/com/studymate/request/CreateStudyGroupRequestTests.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/test/java/com/studymate/api/LiveStudyMateApiTests.java">
 </file>
-<file name="study-mate/src/test/java/com/studymate/service/StudyMateApiServiceTest.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/test/java/com/studymate/request/CreateStudyGroupRequestTests.java">
 </file>
-<file name="study-mate/src/test/java/com/studymate/service/StudyGroupCreationTests.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/test/java/com/studymate/service/StudyMateApiServiceTest.java">
 </file>
-<file name="study-mate/src/test/java/com/studymate/service/PreferenceServiceTest.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/test/java/com/studymate/service/StudyGroupCreationTests.java">
 </file>
-<file name="study-mate/src/test/java/com/studymate/service/StudyGroupServiceTest.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/test/java/com/studymate/service/PreferenceServiceTest.java">
 </file>
-<file name="study-mate/src/test/java/com/studymate/service/MatchingServiceTest.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/test/java/com/studymate/service/StudyGroupServiceTest.java">
 </file>
-<file name="study-mate/src/test/java/com/studymate/service/StudentServiceTest.java">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/test/java/com/studymate/service/MatchingServiceTest.java">
 </file>
-<file name="study-mate/src/main/resources/application.properties">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/test/java/com/studymate/service/StudentServiceTest.java">
 </file>
-<file name="study-mate/src/test/resources/application-api.properties">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/main/resources/application.properties">
 </file>
-<file name="study-mate/src/test/resources/application.properties">
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/test/resources/application-postgres-api.properties">
+</file>
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/test/resources/application-api.properties">
+</file>
+<file name="/Users/hyunwook/COMSW4156-TeamProject/study-mate/src/test/resources/application.properties">
 </file>
 </checkstyle>

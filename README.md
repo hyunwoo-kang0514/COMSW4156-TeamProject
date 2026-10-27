@@ -29,7 +29,7 @@ The project uses:
 - PMD 7.17.0 (via `maven-pmd-plugin` 3.28.0)
 - JaCoCo 0.8.14
 - JUnit 5, Mockito, AssertJ (test scope)
-- PostgreSQL (hosted on Supabase) as the production datastore; H2 (in-memory) for the automated test suite
+- PostgreSQL (hosted on Supabase) as the production datastore; H2 for default tests and PostgreSQL for the opt-in API integration suite
 - GitHub Actions for Continuous Integration
 
 Local environment used for the verification run documented below:
@@ -383,6 +383,53 @@ Two complementary tools, both in the repo:
 
 Latest results: [reports/api-testing.md](reports/api-testing.md). All 38 live tests pass, as do 9/9 and 11/11 cURL cases.
 
+### PostgreSQL API integration tests
+
+The opt-in Maven profile `postgres-api` runs
+`api/PostgresStudyMateApiIt.java` with Maven Failsafe. It inherits the 38 live
+HTTP scenarios from `LiveStudyMateApiTests` and adds a JDBC metadata assertion
+that the database really is PostgreSQL, plus a registration/create/join/leave
+workflow with direct SQL verification of committed membership.
+No services or repositories are mocked. The test configuration is
+`study-mate/src/test/resources/application-postgres-api.properties`; the profile
+and Failsafe lifecycle are in `study-mate/pom.xml`.
+
+Use a dedicated test database and a role allowed to connect and create schemas.
+For example, if Docker is available:
+
+```bash
+docker run --rm --name studymate-postgres-tests \
+  -e POSTGRES_DB=studymate_test -e POSTGRES_USER=studymate_test \
+  -e POSTGRES_PASSWORD=test-password \
+  -p 127.0.0.1:5432:5432 postgres:17
+```
+
+Once PostgreSQL is ready, from `study-mate/`:
+
+```bash
+POSTGRES_TEST_URL=jdbc:postgresql://127.0.0.1:5432/studymate_test \
+POSTGRES_TEST_USERNAME=studymate_test \
+POSTGRES_TEST_PASSWORD=test-password \
+./mvnw -Ppostgres-api verify
+```
+
+The test URL and username are required; password defaults to empty for local
+trust-authenticated test servers. There is no fallback to H2 or production
+`DB_URL`. Do not use the production database. Each run creates a randomly named
+`api_test_*` schema and pins both Hibernate and the connection pool to it.
+Fixture resets affect only that schema, and `@AfterAll` drops it even if a test
+fails. An interrupted/killed JVM may leave a schema requiring manual cleanup.
+Hibernate fails startup on DDL errors. No production tables are migrated or
+reset. Stop the example container afterward with
+`docker stop studymate-postgres-tests`.
+
+`./mvnw verify` without the profile keeps the default H2 behavior. PostgreSQL
+integration results are under `study-mate/target/failsafe-reports/`, while the
+ordinary test results remain under `study-mate/target/surefire-reports/`.
+Do not use `-DskipTests` for a PostgreSQL verification run because it skips
+Failsafe too. The recorded PostgreSQL run is in
+[reports/postgresql-api-testing.md](reports/postgresql-api-testing.md).
+
 ### Test Coverage
 - **Tool:** JaCoCo (`jacoco-maven-plugin` 0.8.14), configured in `study-mate/pom.xml`; the report is generated during `./mvnw verify`.
 - **Result:** **91.01% branch coverage (162 of 178 branches)** over all main code, above the 55% target for this iteration (and the 80% target for the next one).
@@ -432,7 +479,7 @@ All 9/9 matched the documented contract in Section 3. The same 9 cases are autom
 - **Tool:** Checkstyle, via `maven-checkstyle-plugin` 3.6.0 (Checkstyle 9.3).
 - **Ruleset:** the bundled **`google_checks.xml`** (Google Java Style).
 - **Configuration:** `study-mate/pom.xml`. It checks both `src/main` and `src/test` (`includeTestSourceDirectory=true`) and counts every Google-style warning as a violation (`violationSeverity=warning`), so `./mvnw verify` fails unless the whole codebase is clean.
-- **Latest report:** [reports/checkstyle-report.txt](reports/checkstyle-report.txt) (summary) and [reports/checkstyle-result.xml](reports/checkstyle-result.xml) (full output). **Result: 0 violations across all 34 Java files.**
+- **Latest report:** [reports/checkstyle-report.txt](reports/checkstyle-report.txt) (summary) and [reports/checkstyle-result.xml](reports/checkstyle-result.xml) (full output). **Result: 0 violations across all 35 Java files.**
 - Code was formatted with google-java-format (via `com.spotify.fmt:fmt-maven-plugin`, which is not part of the build). To reformat after editing:
   ```bash
   ./mvnw com.spotify.fmt:fmt-maven-plugin:2.25:format
@@ -457,7 +504,7 @@ All 9/9 matched the documented contract in Section 3. The same 9 cases are autom
 **Workflow location:** `.github/workflows/ci.yml`.
 **Triggers:** every `push` and `pull_request` targeting `main`.
 
-The workflow spins up a real PostgreSQL 17 service container (matching the production Supabase engine version), waits for it to be healthy, then runs the full Maven verification (tests + Checkstyle + PMD + JaCoCo) against it:
+The workflow starts a PostgreSQL 17 service container and runs `./mvnw -Ppostgres-api verify`. Surefire runs the default 187 tests on H2, then Failsafe runs the PostgreSQL API integration suite against the service container. Both suites and the style/static checks must pass. See the PostgreSQL testing instructions in Section 6; the test database settings are separate from production `DB_*` settings.
 
 ```yaml
 name: CI
@@ -488,9 +535,9 @@ jobs:
           --health-retries=5
 
     env:
-      DB_URL: jdbc:postgresql://localhost:5432/studymate
-      DB_USERNAME: postgres
-      DB_PASSWORD: postgres
+      POSTGRES_TEST_URL: jdbc:postgresql://localhost:5432/studymate
+      POSTGRES_TEST_USERNAME: postgres
+      POSTGRES_TEST_PASSWORD: postgres
 
     steps:
       - name: Checkout repository
@@ -505,7 +552,7 @@ jobs:
 
       - name: Run Maven verify
         working-directory: study-mate
-        run: ./mvnw verify
+        run: ./mvnw -Ppostgres-api verify
 ```
 
 Workflow status and logs are visible from the repository's **Actions** tab.
@@ -540,21 +587,20 @@ No other third-party source code is copied into the repository. Libraries and to
 
 Tasks for each team member are tracked with **GitHub Issues** and a **GitHub Projects** board:
 
-- **Project board:** [StudyMate — Iteration 1](https://github.com/users/hyunwoo-kang0514/projects/1/views/1) (public, so the Mentor and Instructor can view it). Each issue shows its assignee, status (Todo / In Progress / Done) and linked pull requests.
-- **Issues:** https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues?q=is%3Aissue
+**Project board:** [StudyMate — Iteration 1](https://github.com/users/hyunwoo-kang0514/projects/1) (public, linked to this repository, so the Mentor and Instructor can view it without an invite).
 
 | Issue | Task | Owner |
 |---|---|---|
-| #10 | Project setup: Spring Boot, PostgreSQL/Supabase, H2 test config, CI | Hyunwoo Kang |
-| #11 | Find Compatible Study Groups (`GET /api/find`) | Hyunwoo Kang |
-| #13 | Join Study Group (`POST /api/join`) | Hyunwoo Kang |
-| #12 | Register Student (`POST /api/students`) | Kevin Chuang |
-| #14 | Register / Update / Get Study Preference | Ugorji Benjamin Barrah |
-| #15 | Create Study Group (`POST /api/groups`) | Hyunwoo Kim |
-| #16 | Leave Study Group (`POST /api/leave`) | Ziyue Fang |
-| #17 | Iteration 1 cleanup: Checkstyle, preference 404 fixes, reports | Ziyue Fang |
-
-Every component was developed on its own branch and merged into `main` through a pull request.
+| [#10](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/10) | Project setup: Spring Boot skeleton, PostgreSQL/Supabase connection, H2 test config, CI | @hyunwoo-kang0514 |
+| [#11](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/11) | Find Compatible Study Groups (`GET /api/find`) | @hyunwoo-kang0514 |
+| [#12](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/12) | Register Student (`POST /api/students`) | @kchua220 |
+| [#13](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/13) | Join Study Group (`POST /api/join`) | @hyunwoo-kang0514 |
+| [#14](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/14) | Register / Update / Get Study Preference | @ubb2000 |
+| [#15](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/15) | Create Study Group (`POST /api/groups`) | @hywkim-brian |
+| [#16](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/16) | Leave Study Group (`POST /api/leave`) | @Tobbs2005 |
+| [#17](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/17) | Iteration 1 cleanup: Checkstyle-clean codebase, preference 404 fixes, refreshed reports | @Tobbs2005 |
+| [#18](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/18) | Document AI usage for every component | @hywkim-brian, @kchua220, @ubb2000 |
+| [#19](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/19) | Tag the first-iteration release on `main` | Team |
 
 ---
 
@@ -578,7 +624,7 @@ Every component was developed on its own branch and merged into `main` through a
 - "Based on the code I wrote and Postgres DB instance write Curl Command" (while doing this, Claude found and fixed the bugs listed above)
 - "Refine README in more formal and structured way"
 
-**All AI-authored or AI-debugged code is marked inline with a comment** (e.g., `// AI-generated (Claude Code)` / `// AI-fixed (Claude Code)`) at the top of each affected file or at the specific changed lines, including test code (`ApiControllerTest.java`, the updated `joinGroup` test in `StudyGroupServiceTest.java`), so changes are traceable even after manual review/edits.
+**Claude attribution:** AI-authored or AI-debugged portions described in this Claude section are marked inline with a comment (e.g., `// AI-generated (Claude Code)` / `// AI-fixed (Claude Code)`) at the top of each affected file or at the specific changed lines, including test code (`ApiControllerTest.java`, the updated `joinGroup` test in `StudyGroupServiceTest.java`), so changes are traceable even after manual review/edits.
 
 **Estimated token usage (this component, this session):** ~400,000–600,000 tokens (combined input + output, including tool/command output consumed as context). This is a rough self-reported estimate based on session length and complexity, not an exact billing figure — for the precise number, pull actual usage from the Claude Code session cost report (`/cost`) or the Anthropic Console usage dashboard tied to the account used.
 
@@ -606,6 +652,102 @@ Every component was developed on its own branch and merged into `main` through a
 6. Bug check and Checkstyle fixes: "Now that every component is merged, run each endpoint over HTTP against the local H2 instance and list anything that returns a 500 or doesn't match the README. Fix the bugs you find with a failing test first. Then make the whole codebase, including tests, Checkstyle-clean under Google style without changing behavior, and make `./mvnw verify` fail on any Checkstyle warning."
 
 **Token usage (this component):** about 6,000,000 tokens total (input + output) across all of the prompts above.
+
+### Group creation and API testing (OpenAI Codex)
+
+OpenAI Codex was used through the Codex application to generate the group-creation
+request, the creation endpoint, the service's creation and validation methods,
+and the request/service/controller tests. It also generated the live HTTP API
+suite, PostgreSQL integration configuration, and related documentation, and
+assisted with merge resolution and verification. Existing teammate implementations
+and their attribution are retained.
+
+All five test classes generated in this collaboration carry Codex attribution:
+`CreateStudyGroupRequestTests`, `StudyGroupCreationTests`,
+`StudyGroupCreationApiTests`, `LiveStudyMateApiTests`, and
+`PostgresStudyMateApiIt`.
+
+For the instructor-directed evaluation, production-code labels are intentionally
+partial: 68.9% of the nonblank implementation lines across the six
+Codex-generated production methods carry method-level attribution. Whole methods
+are selected, with approximately 30% left unlabeled. This percentage describes
+those methods, not the entire repository. Absence of an inline label does not
+assert human authorship. No human-fixed attribution has been added.
+
+Representative prompts from this collaboration:
+- "Define a separate creation-request class ... Explicitly reject attempts to supply server-controlled fields."
+- "ok implement it and explain (do not implement the tests yet)"
+- "do the next step in APicontroller"
+- "create test cases"
+- "can you do the API testing part now"
+- "add tests configured for PostgreSQL and commit"
+
+### PostgreSQL API test configuration (OpenAI Codex)
+
+OpenAI Codex was used through the Codex application to add
+`PostgresStudyMateApiIt.java`, the PostgreSQL test profile, Maven Failsafe/CI
+configuration, and their documentation. The Java test file is marked
+AI-generated. Prompt: "add tests configured for PostgreSQL and commit".
+This session's token total is not exposed to this task; it has not been
+estimated or invented and still needs to be supplied from account/session
+usage records for the assignment's team-wide accounting.
+### Create Study Group component (Hyunwoo Kim)
+
+**Tool used:** None reported. No AI tool usage was reported for this component in Iteration 1.
+
+**AI-generated or AI-debugged code:** None reported. None of this component's files carry an `AI-generated` / `AI-fixed` marker. Files in this component: `POST /api/groups` handler in `ApiController.java`, `StudyGroupService` group-creation logic, `request/CreateStudyGroupRequest.java`, `request/CreateStudyGroupRequestTests.java`, `service/StudyGroupCreationTests.java`, `controller/StudyGroupCreationApiTests.java`, `api/LiveStudyMateApiTests.java`, and the `/api/groups` parts of this README.
+
+**Representative prompts:** N/A.
+
+**Estimated token usage:** 0 reported.
+
+### Register Student component (Kevin Chuang)
+
+**Tool used:** None reported. No AI tool usage was reported for this component in Iteration 1.
+
+**AI-generated or AI-debugged code:** None reported. None of this component's files carry an `AI-generated` / `AI-fixed` marker. Files in this component: `POST /api/students` handler in `ApiController.java`, `StudentService` registration logic, `StudentRepository`, `dto/RegisterStudentRequest.java`, `dto/RegisterStudentResponse.java`, `service/StudentServiceTest.java`, `RegisterStudentIntegrationTest.java`, and the `/api/students` parts of this README.
+
+**Representative prompts:** N/A.
+
+**Estimated token usage:** 0 reported.
+
+### Study Preference component (Ugo Barrah)
+
+**Tool used:** Claude (Anthropic), via the Claude app (model: Claude Opus 5.5), accessed through Ugo Barrah's Claude account.
+
+**How it was used (this component — Add / Update / Get Study Preferences):**
+
+* Wrote most of the unit tests for this component, including the preference-endpoint tests (`POST /api/`, `PUT /api/{id}`, `GET /api/{id}`) in `study-mate/src/test/java/com/studymate/controller/ApiControllerTest.java`, following the existing Mockito Arrange/Act/Assert patterns
+
+* Helped debug errors in `PreferenceService.java`, `ApiController.java`, and the `Preference` entity found while building and manually testing the endpoints:
+   * **Spring wiring and repository typing:** the controller and service created their dependencies with `new` instead of constructor injection, a `final` field had no constructor to set it, and `PreferenceRepository` extended a raw `JpaRepository` (no `<Preference, Long>`), so `save()` returned `Object`. Fixed with constructor injection (`@AllArgsConstructor`) and the correct generics.
+   * **`Optional` handling in update/get:** `findById()` returns `Optional<Preference>`, which was assigned directly to a `Preference`. Fixed with `.orElseThrow(...)`. The update also stopped modifying the primary key, which would have caused a Hibernate "identifier altered" error.
+   * **Linking `Preference` to `Student` with a shared primary key:** `Student`'s `mappedBy = "student"` pointed to a field that didn't exist, and the relationship annotations were attached to the wrong field (`school`). Fixed with a `@OneToOne` + `@MapsId` `student` field, `@JsonIgnore` to prevent JSON infinite recursion, and setting the `Student` in `addStudentStudyPreferences()` before saving.
+   * **CI `./mvnw verify` failures:** the app ran locally, but CI failed on PMD violations (unused and duplicate imports in `ApiController.java`, `PreferenceService.java`, and `Preference.java`). Fixed by removing them and running `./mvnw clean verify` locally before pushing.
+* Helped draft the Javadoc comments for the preference service methods and the API Reference entries for the three preference endpoints in this README.
+
+**Representative prompts used:**
+
+* "What is wrong with my project from seeing this error code?" (with the Maven / Spring stack trace pasted)
+* "Add tests in this format for the other 3 API controller tests."
+
+All AI-authored or AI-debugged code in this component is marked inline with the same comment markers used elsewhere in this README (e.g., `// AI-generated (Claude)` / `// AI-fixed (Claude)`), at the top of each affected file or at the specific changed lines, including test code in `ApiControllerTest.java`, so changes remain traceable after manual review and edits.
+
+**Estimated token usage (this component):** ~150,000–250,000 tokens (combined input + output of the conversation). This is a rough self-reported estimate based on conversation length, not an exact billing figure. Actual processed tokens are higher, because earlier conversation context is re-read on each turn.
+
+**Representative prompts:** N/A.
+
+**Estimated token usage:** 0 reported.
+
+### Token usage summary
+
+| Member | Component | Tool | Total tokens |
+|---|---|---|---|
+| Hyunwoo Kang | Find / Join Study Group | Claude Code | ~400,000–600,000 (estimate) |
+| Ziyue Fang | Leave Study Group | Claude (Cowork, Opus 5.5) | Not recorded |
+| Hyunwoo Kim | Create Study Group | Codex | ~100,000-200,000 |
+| Kevin Chuang | Register Student | None reported | 0 |
+| Ugo Barrah | Study Preference | Claude Code | ~150,000 |
 
 ---
 
