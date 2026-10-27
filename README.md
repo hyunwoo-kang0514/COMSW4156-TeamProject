@@ -656,6 +656,15 @@ Every component was developed on its own branch and merged into `main` through a
 
 **Token usage (this component):** about 6,000,000 tokens total (input + output) across all of the prompts above.
 
+1. Understand first: "Read the `harry/matching` branch, especially `/api/join`, `StudyGroupService.joinGroup()`, the entities and tests. Summarize the conventions I should follow and which tables and columns leaving a group touches. Don't write code yet."
+2. Design the contract: "Propose the API contract for Leave Study Group: method/path, request body and status codes. List every failure case (student or group missing, not a member, owner leaving, last member, repeated requests) with a status code for each, and justify 400 vs 404 vs 403. Keep it consistent with `/api/join`."
+3. Implement in steps: "Implement the DTO and `leaveGroup()` service first, then the controller, based on the contract we agreed on. Make sure the membership change actually persists (join had a missing `save()` bug). Show me the diff after each step."
+4. Test deliberately: "Write a test plan covering every failure case, then implement unit tests (mocked repos, MockMvc) and a cURL script that checks the row is really gone. Run `./mvnw verify` and report any uncovered branches."
+5. Review and document: "Review your code as a strict reviewer (races, error consistency, Checkstyle/PMD). Then split the work into commits that each compile, write the README section in the `/api/join` format, and list the open questions I should bring to the team."
+6. Bug check and Checkstyle fixes: "Now that every component is merged, run each endpoint over HTTP against the local H2 instance and list anything that returns a 500 or doesn't match the README. Fix the bugs you find with a failing test first. Then make the whole codebase, including tests, Checkstyle-clean under Google style without changing behavior, and make `./mvnw verify` fail on any Checkstyle warning."
+
+**Token usage (this component):** about 6,000,000 tokens total (input + output) across all of the prompts above.
+
 ### Create Study Group component and API testing (Hyunwoo Kim, OpenAI Codex)
 
 OpenAI Codex was used through the Codex application to generate the group-creation
@@ -691,8 +700,33 @@ OpenAI Codex was used through the Codex application to add
 `PostgresStudyMateApiIt.java`, the PostgreSQL test profile, Maven Failsafe/CI
 configuration, and their documentation. The Java test file is marked
 AI-generated. Prompt: "add tests configured for PostgreSQL and commit".
-Hyunwoo Kim's self-reported token estimate for all Codex work is in the
-token usage summary below.
+This session's token total is not exposed to this task; it has not been
+estimated or invented and still needs to be supplied from account/session
+usage records for the assignment's team-wide accounting.
+
+### Create Study Group component (Hyunwoo Kim)
+
+**Tool used:** OpenAI Codex through the Codex application.
+
+**What it generated (reviewed by Hyunwoo Kim and marked inline with `AI-generated` comments in this example):**
+
+- `POST /api/groups` handler in `ApiController.java`, including request handling and HTTP error responses.
+- Group-creation logic in `StudyGroupService`, including input validation, creator membership, and database persistence.
+- `request/CreateStudyGroupRequest.java`, defining accepted input fields and rejecting server-controlled fields.
+- `request/CreateStudyGroupRequestTests.java`, `service/StudyGroupCreationTests.java`, and `controller/StudyGroupCreationApiTests.java`.
+- `api/LiveStudyMateApiTests.java`, exercising endpoints through HTTP and checking saved data.
+- `api/PostgresStudyMateApiIt.java`, PostgreSQL test configuration, and Maven/CI settings for running API tests against PostgreSQL.
+- README documentation covering endpoint inputs, outputs, status codes, side effects, example requests, and test instructions.
+
+**Representative example prompts:**
+
+- “Create a request class for study-group creation. Accept the group name, course, capacity, schedules, study styles, meeting mode, and creator ID. Reject server-controlled fields.”
+- “Implement group creation in `StudyGroupService`. Validate the input, add the creator as the first member, and save the group.”
+- “Add `POST /api/groups` to `ApiController`, following our existing conventions. Return appropriate success and error responses.”
+- “Isolate each PostgreSQL test run in a temporary schema and remove it afterward.”
+- “Document the endpoint’s inputs, outputs, errors, side effects, and example usage in the README.”
+
+**Illustrative token usage:** 100,000-200,000 tokens. 
 
 ### Register Student component (Kevin Chuang)
 
