@@ -1,5 +1,7 @@
 package com.studymate.request;
 
+// AI-generated with OpenAI Codex; see README "AI Documentation".
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;

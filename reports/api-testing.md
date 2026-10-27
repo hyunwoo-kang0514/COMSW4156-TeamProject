@@ -81,7 +81,10 @@ at `study-mate/target/site/jacoco/index.html` and test results under
 
 ## Scope and limitations
 
-H2 exercises actual persistence but does not establish PostgreSQL compatibility.
+The default H2 suite exercises actual persistence. A separate opt-in PostgreSQL
+suite now runs the shared scenarios against PostgreSQL; see
+[postgresql-api-testing.md](postgresql-api-testing.md) for its configuration and
+verified results. The 187-test table above remains the default suite count.
 The test profile allows the existing `DAY` and `YEAR` column names and fails
 startup on schema-generation errors. Production configuration was not changed.
 
