@@ -585,7 +585,7 @@ No other third-party source code is copied into the repository. Libraries and to
 
 ## 11. Project Management
 
-Tasks for each team member are tracked with **GitHub Issues / GitHub Projects** on the repository (https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject). The owner of each component is listed in the table under [Authors / Team Members](#authors--team-members) and in [Section 1](#1-implementation-status-this-iteration--mvp), and every component was developed on its own branch and merged through a pull request.
+Tasks for each team member are tracked with **GitHub Issues** and a **GitHub Projects** board:
 
 **Project board:** [StudyMate — Iteration 1](https://github.com/users/hyunwoo-kang0514/projects/1) (public, linked to this repository, so the Mentor and Instructor can view it without an invite).
 
@@ -630,7 +630,7 @@ Tasks for each team member are tracked with **GitHub Issues / GitHub Projects** 
 
 ### Leave Study Group component (Ziyue Fang)
 
-**Tool used:** Claude (Anthropic), Cowork mode, model Claude Opus 5.5, via Ziyue Fang's Claude account.
+**Tool used:** Claude (Anthropic), model Claude Opus 5.5, via Ziyue Fang's Claude account.
 
 **What it generated (all reviewed by Ziyue Fang and marked inline with `AI-generated` comments, following the team convention):**
 - `POST /api/leave` handler in `ApiController.java` and `StudyGroupService.leaveGroup()`.
@@ -638,8 +638,20 @@ Tasks for each team member are tracked with **GitHub Issues / GitHub Projects** 
 - `controller/LeaveStudyGroupControllerTest.java` and the `leaveGroup` tests at the end of `service/StudyGroupServiceTest.java`.
 - `scripts/api-test-leave.sh`.
 - The `/api/leave` parts of this README, plus the `NON_KEYWORDS=YEAR,DAY` fix to the local H2 run command (found while running the API tests).
+- The preference 404 fix: `POST /api/`, `PUT /api/{id}` and `GET /api/{id}` now return 404 for a missing student or preference (and 400 for a body without an id) instead of a 500, and `POST /api/` now works over HTTP. Changes are in `PreferenceService.java` and the three preference handlers in `ApiController.java`, with new tests in `PreferenceServiceTest.java` and `LiveStudyMateApiTests.java`.
+- The identity counter restart in `src/test/resources/local-seed.sql`, so new students and groups can be created on the local H2 instance.
+- The Checkstyle cleanup (commit `ffa913c`): reformatting every main and test source file to Google Java Style, adding missing class Javadoc, and replacing star imports. These changes are formatting and Javadoc only and don't change behavior, so those files aren't marked line by line. The `pom.xml` setting that makes any Checkstyle warning fail the build is marked.
 
-**Representative prompt:** "Implement my part (Leave Study Group): entity/repository/service logic, the endpoint, validation, failure cases, idempotency, unit tests with mocks, API tests, and the README section."
+**Prompts used:**
+
+1. Understand first: "Read the `harry/matching` branch, especially `/api/join`, `StudyGroupService.joinGroup()`, the entities and tests. Summarize the conventions I should follow and which tables and columns leaving a group touches. Don't write code yet."
+2. Design the contract: "Propose the API contract for Leave Study Group: method/path, request body and status codes. List every failure case (student or group missing, not a member, owner leaving, last member, repeated requests) with a status code for each, and justify 400 vs 404 vs 403. Keep it consistent with `/api/join`."
+3. Implement in steps: "Implement the DTO and `leaveGroup()` service first, then the controller, based on the contract we agreed on. Make sure the membership change actually persists (join had a missing `save()` bug). Show me the diff after each step."
+4. Test deliberately: "Write a test plan covering every failure case, then implement unit tests (mocked repos, MockMvc) and a cURL script that checks the row is really gone. Run `./mvnw verify` and report any uncovered branches."
+5. Review and document: "Review your code as a strict reviewer (races, error consistency, Checkstyle/PMD). Then split the work into commits that each compile, write the README section in the `/api/join` format, and list the open questions I should bring to the team."
+6. Bug check and Checkstyle fixes: "Now that every component is merged, run each endpoint over HTTP against the local H2 instance and list anything that returns a 500 or doesn't match the README. Fix the bugs you find with a failing test first. Then make the whole codebase, including tests, Checkstyle-clean under Google style without changing behavior, and make `./mvnw verify` fail on any Checkstyle warning."
+
+**Token usage (this component):** about 6,000,000 tokens total (input + output) across all of the prompts above.
 
 ### Group creation and API testing (OpenAI Codex)
 

@@ -246,6 +246,7 @@ class LiveStudyMateApiTests {
         });
   }
 
+  // AI-generated (Claude Code), reviewed by Ziyue Fang. See README "AI Documentation".
   @Test
   void preferenceCanBeCreatedOverHttp() throws Exception {
     String body =
@@ -270,6 +271,7 @@ class LiveStudyMateApiTests {
         });
   }
 
+  // AI-generated (Claude Code), reviewed by Ziyue Fang. See README "AI Documentation".
   @Test
   void preferenceEndpointsReturnNotFoundForUnknownStudents() throws Exception {
     long missingId = creator.getId() + 1000;
