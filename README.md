@@ -611,7 +611,7 @@ Tasks for each team member are tracked with **GitHub Issues / GitHub Projects** 
 - "Based on the code I wrote and Postgres DB instance write Curl Command" (while doing this, Claude found and fixed the bugs listed above)
 - "Refine README in more formal and structured way"
 
-**All AI-authored or AI-debugged code is marked inline with a comment** (e.g., `// AI-generated (Claude Code)` / `// AI-fixed (Claude Code)`) at the top of each affected file or at the specific changed lines, including test code (`ApiControllerTest.java`, the updated `joinGroup` test in `StudyGroupServiceTest.java`), so changes are traceable even after manual review/edits.
+**Claude attribution:** AI-authored or AI-debugged portions described in this Claude section are marked inline with a comment (e.g., `// AI-generated (Claude Code)` / `// AI-fixed (Claude Code)`) at the top of each affected file or at the specific changed lines, including test code (`ApiControllerTest.java`, the updated `joinGroup` test in `StudyGroupServiceTest.java`), so changes are traceable even after manual review/edits.
 
 **Estimated token usage (this component, this session):** ~400,000–600,000 tokens (combined input + output, including tool/command output consumed as context). This is a rough self-reported estimate based on session length and complexity, not an exact billing figure — for the precise number, pull actual usage from the Claude Code session cost report (`/cost`) or the Anthropic Console usage dashboard tied to the account used.
 
@@ -627,6 +627,35 @@ Tasks for each team member are tracked with **GitHub Issues / GitHub Projects** 
 - The `/api/leave` parts of this README, plus the `NON_KEYWORDS=YEAR,DAY` fix to the local H2 run command (found while running the API tests).
 
 **Representative prompt:** "Implement my part (Leave Study Group): entity/repository/service logic, the endpoint, validation, failure cases, idempotency, unit tests with mocks, API tests, and the README section."
+
+### Group creation and API testing (OpenAI Codex)
+
+OpenAI Codex was used through the Codex application to generate the group-creation
+request, the creation endpoint, the service's creation and validation methods,
+and the request/service/controller tests. It also generated the live HTTP API
+suite, PostgreSQL integration configuration, and related documentation, and
+assisted with merge resolution and verification. Existing teammate implementations
+and their attribution are retained.
+
+All five test classes generated in this collaboration carry Codex attribution:
+`CreateStudyGroupRequestTests`, `StudyGroupCreationTests`,
+`StudyGroupCreationApiTests`, `LiveStudyMateApiTests`, and
+`PostgresStudyMateApiIt`.
+
+For the instructor-directed evaluation, production-code labels are intentionally
+partial: 68.9% of the nonblank implementation lines across the six
+Codex-generated production methods carry method-level attribution. Whole methods
+are selected, with approximately 30% left unlabeled. This percentage describes
+those methods, not the entire repository. Absence of an inline label does not
+assert human authorship. No human-fixed attribution has been added.
+
+Representative prompts from this collaboration:
+- "Define a separate creation-request class ... Explicitly reject attempts to supply server-controlled fields."
+- "ok implement it and explain (do not implement the tests yet)"
+- "do the next step in APicontroller"
+- "create test cases"
+- "can you do the API testing part now"
+- "add tests configured for PostgreSQL and commit"
 
 ### PostgreSQL API test configuration (OpenAI Codex)
 
