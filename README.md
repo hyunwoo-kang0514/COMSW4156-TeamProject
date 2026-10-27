@@ -721,7 +721,7 @@ usage records for the assignment's team-wide accounting.
 |---|---|---|---|
 | Hyunwoo Kang | Find / Join Study Group | Claude Code (Anthropic) | ~400,000–600,000 (estimate) |
 | Ziyue Fang | Leave Study Group, iteration 1 fixes | Claude Opus 5.5 (Anthropic) | ~6,000,000 |
-| Hyunwoo Kim | Create Study Group, live and PostgreSQL API tests | OpenAI Codex | Not recorded (the Codex app did not expose a token total) |
+| Hyunwoo Kim | Create Study Group, live and PostgreSQL API tests | OpenAI Codex | ~100,000–200,000 (self-reported estimate) |
 | Kevin Chuang | Register Student | None (no AI use reported) | 0 |
 | Ugorji Benjamin Barrah | Study Preference | None (no AI use reported) | 0 |
 
