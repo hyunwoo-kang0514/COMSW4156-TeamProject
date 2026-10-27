@@ -56,16 +56,16 @@ cd study-mate
 
 All six operations from the proposal are implemented, unit-tested, and API-tested in this iteration:
 
-| Operation | Method & Path | Owner |
-|---|---|---|
-| Health check | `GET /api/health` | — |
-| Register Student | `POST /api/students` | Kevin Chuang |
-| Register Study Preference | `POST /api/` | Ugorji Benjamin Barrah |
+| Operation | Method & Path                    | Owner |
+|---|----------------------------------|---|
+| Health check | `GET /api/health`                | — |
+| Register Student | `POST /api/students`             | Kevin Chuang |
+| Register Study Preference | `POST /api/`                     | Ugorji Benjamin Barrah |
 | Update / Get Study Preference | `PUT /api/{id}`, `GET /api/{id}` | Ugorji Benjamin Barrah |
-| Create Study Group | `POST /api/groups` |  |
-| Find Compatible Study Groups | `GET /api/find?studentId={id}` | Hyunwoo Kang |
-| Join Study Group | `POST /api/join` | Hyunwoo Kang |
-| Leave Study Group | `POST /api/leave` | Ziyue Fang |
+| Create Study Group | `POST /api/groups`               | Hyunwoo Kim |
+| Find Compatible Study Groups | `GET /api/find?studentId={id}`   | Hyunwoo Kang |
+| Join Study Group | `POST /api/join`                 | Hyunwoo Kang |
+| Leave Study Group | `POST /api/leave`                | Ziyue Fang |
 
 Known limitations in this iteration:
 
@@ -693,13 +693,29 @@ Every component was developed on its own branch and merged into `main` through a
 
 ### Register Student component (Kevin Chuang)
 
-**Tool used:** None reported. No AI tool usage was reported for this component in Iteration 1.
+**Tool used:** OpenAI Codex through the Codex application.
 
-**AI-generated or AI-debugged code:** None reported for this component's own code. AI markers that appear in shared files (such as `ApiController.java`) belong to the other components documented above. Files in this component: `POST /api/students` handler in `ApiController.java`, `StudentService` registration logic, `StudentRepository`, `dto/RegisterStudentRequest.java`, `dto/RegisterStudentResponse.java`, `service/StudentServiceTest.java`, `RegisterStudentIntegrationTest.java`, and the `/api/students` parts of this README.
+**What it helped generate and debug (marked inline as AI-assisted):**
 
-**Representative prompts:** N/A.
+- `POST /api/students` handler in `ApiController.java`, including request validation and HTTP response handling.
+- Student registration logic in `StudentService.java`, including input validation, duplicate student ID detection, unique API key generation, and database persistence.
+- `dto/RegisterStudentRequest.java` and `dto/RegisterStudentResponse.java`, defining the registration request and response structures.
+- `service/StudentServiceTest.java`, including unit tests for registration validation, duplicate detection, and successful registration.
+- `RegisterStudentIntegrationTest.java`, testing the registration endpoint using MockMvc and an H2 in-memory database.
+- Registration-related tests in `ApiControllerTest.java`.
+- README documentation covering endpoint inputs, outputs, HTTP status codes, and example requests.
 
-**Estimated token usage:** 0 reported.
+**Representative example prompts:**
+
+- "Implement a student registration endpoint using Spring Boot that accepts student information, validates required fields, and saves the student to the database."
+- "Add duplicate student ID detection and generate a unique API key for each newly registered student."
+- "Create request and response DTOs for student registration instead of returning the JPA entity directly."
+- "Write unit tests for the student registration service, including successful registration, invalid input, and duplicate student IDs."
+- "Add integration tests using MockMvc and H2 to verify the registration endpoint returns the correct HTTP status codes."
+- "Help debug the H2 test database error caused by reserved SQL keywords."
+- "Document the student registration endpoint in the README, including inputs, outputs, error responses, and example requests."
+
+**Estimated token usage:** Not available; exact usage was not tracked.
 
 ### Study Preference component (Ugorji Benjamin Barrah)
 
@@ -727,12 +743,12 @@ All AI-authored or AI-debugged code in this component is marked inline with the 
 
 ### Token usage summary
 
-| Member | Component | Tool | Total tokens |
-|---|---|---|---|
-| Hyunwoo Kang | Find / Join Study Group | Claude Code (Anthropic) | ~400,000–600,000 (estimate) |
-| Ziyue Fang | Leave Study Group, iteration 1 fixes | Claude Opus 5.5 (Anthropic) | ~6,000,000 |
-| Hyunwoo Kim | Create Study Group, live and PostgreSQL API tests | OpenAI Codex | ~100,000–200,000 (self-reported estimate) |
-| Kevin Chuang | Register Student | None (no AI use reported) | 0 |
+| Member | Component | Tool                                    | Total tokens |
+|---|---|-----------------------------------------|--|
+| Hyunwoo Kang | Find / Join Study Group | Claude Code (Anthropic)                 | ~400,000–600,000 (estimate) |
+| Ziyue Fang | Leave Study Group, iteration 1 fixes | Claude Opus 5.5 (Anthropic)             | ~6,000,000 |
+| Hyunwoo Kim | Create Study Group, live and PostgreSQL API tests | OpenAI Codex                            | ~100,000–200,000 (self-reported estimate) |
+| Kevin Chuang | Register Student | OpenAI Codex                            | ~100,000–200,000 |
 | Ugorji Benjamin Barrah | Study Preference | Claude Opus 5.5 (Anthropic, Claude app) | ~150,000–250,000 (self-reported estimate) |
 
 ---
