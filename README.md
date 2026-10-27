@@ -62,7 +62,7 @@ All six operations from the proposal are implemented, unit-tested, and API-teste
 | Register Student | `POST /api/students` | Kevin Chuang |
 | Register Study Preference | `POST /api/` | Ugorji Benjamin Barrah |
 | Update / Get Study Preference | `PUT /api/{id}`, `GET /api/{id}` | Ugorji Benjamin Barrah |
-| Create Study Group | `POST /api/groups` |  |
+| Create Study Group | `POST /api/groups` | Hyunwoo Kim |
 | Find Compatible Study Groups | `GET /api/find?studentId={id}` | Hyunwoo Kang |
 | Join Study Group | `POST /api/join` | Hyunwoo Kang |
 | Leave Study Group | `POST /api/leave` | Ziyue Fang |
