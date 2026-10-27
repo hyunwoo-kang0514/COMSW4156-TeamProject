@@ -706,13 +706,27 @@ token usage summary below.
 
 ### Study Preference component (Ugorji Benjamin Barrah)
 
-**Tool used:** None reported. No AI tool usage was reported for this component in Iteration 1.
+**Tool used:** Claude (Anthropic), via the Claude app (model: Claude Opus 5.5), accessed through Ugo Barrah's Claude account.
 
-**AI-generated or AI-debugged code:** None reported for this component's original implementation. The later preference 404 fix in these files was AI-generated and is documented and marked under the Leave Study Group (Ziyue Fang) section above. Files in this component: preference handlers (`POST /api/`, `PUT /api/{id}`, `GET /api/{id}`) in `ApiController.java`, `service/PreferenceService.java`, `repository/PreferenceRepository.java`, `domain/Preference.java`, `service/PreferenceServiceTest.java`, and the preference parts of this README.
+**How it was used (this component — Add / Update / Get Study Preferences):**
 
-**Representative prompts:** N/A.
+* Wrote most of the unit tests for this component, including the preference-endpoint tests (`POST /api/`, `PUT /api/{id}`, `GET /api/{id}`) in `study-mate/src/test/java/com/studymate/controller/ApiControllerTest.java`, following the existing Mockito Arrange/Act/Assert patterns
 
-**Estimated token usage:** 0 reported.
+* Helped debug errors in `PreferenceService.java`, `ApiController.java`, and the `Preference` entity found while building and manually testing the endpoints:
+   * **Spring wiring and repository typing:** the controller and service created their dependencies with `new` instead of constructor injection, a `final` field had no constructor to set it, and `PreferenceRepository` extended a raw `JpaRepository` (no `<Preference, Long>`), so `save()` returned `Object`. Fixed with constructor injection (`@AllArgsConstructor`) and the correct generics.
+   * **`Optional` handling in update/get:** `findById()` returns `Optional<Preference>`, which was assigned directly to a `Preference`. Fixed with `.orElseThrow(...)`. The update also stopped modifying the primary key, which would have caused a Hibernate "identifier altered" error.
+   * **Linking `Preference` to `Student` with a shared primary key:** `Student`'s `mappedBy = "student"` pointed to a field that didn't exist, and the relationship annotations were attached to the wrong field (`school`). Fixed with a `@OneToOne` + `@MapsId` `student` field, `@JsonIgnore` to prevent JSON infinite recursion, and setting the `Student` in `addStudentStudyPreferences()` before saving.
+   * **CI `./mvnw verify` failures:** the app ran locally, but CI failed on PMD violations (unused and duplicate imports in `ApiController.java`, `PreferenceService.java`, and `Preference.java`). Fixed by removing them and running `./mvnw clean verify` locally before pushing.
+* Helped draft the Javadoc comments for the preference service methods and the API Reference entries for the three preference endpoints in this README.
+
+**Representative prompts used:**
+
+* "What is wrong with my project from seeing this error code?" (with the Maven / Spring stack trace pasted)
+* "Add tests in this format for the other 3 API controller tests."
+
+All AI-authored or AI-debugged code in this component is marked inline with the same comment markers used elsewhere in this README (e.g., `// AI-generated (Claude)` / `// AI-fixed (Claude)`), at the top of each affected file or at the specific changed lines, including test code in `ApiControllerTest.java`, so changes remain traceable after manual review and edits.
+
+**Estimated token usage (this component):** ~150,000–250,000 tokens (combined input + output of the conversation). This is a rough self-reported estimate based on conversation length, not an exact billing figure. Actual processed tokens are higher, because earlier conversation context is re-read on each turn.
 
 ### Token usage summary
 
@@ -722,7 +736,7 @@ token usage summary below.
 | Ziyue Fang | Leave Study Group, iteration 1 fixes | Claude Opus 5.5 (Anthropic) | ~6,000,000 |
 | Hyunwoo Kim | Create Study Group, live and PostgreSQL API tests | OpenAI Codex | ~100,000–200,000 (self-reported estimate) |
 | Kevin Chuang | Register Student | None (no AI use reported) | 0 |
-| Ugorji Benjamin Barrah | Study Preference | None (no AI use reported) | 0 |
+| Ugorji Benjamin Barrah | Study Preference | Claude Opus 5.5 (Anthropic, Claude app) | ~150,000–250,000 (self-reported estimate) |
 
 ---
 
