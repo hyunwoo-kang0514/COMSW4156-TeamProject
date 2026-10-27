@@ -427,8 +427,18 @@ class LiveStudyMateApiTests {
     return send("POST", "/api/groups", body.toString(), API_KEY, "application/json");
   }
 
-  /** Sends a bounded HTTP request to the application's randomly assigned local port. */
-  private HttpResponse<String> send(
+  /**
+   * Sends a bounded HTTP request to the application's randomly assigned local port.
+   *
+   * @param method HTTP method
+   * @param path endpoint path, including any query parameters
+   * @param body request body, or null for no body
+   * @param key API key, or null to omit the header
+   * @param contentType content type, or null to omit the header
+   * @return the server's HTTP response
+   * @throws Exception if the request cannot be sent
+   */
+  protected HttpResponse<String> send(
       String method, String path, String body, String key, String contentType) throws Exception {
     HttpRequest.Builder request =
         HttpRequest.newBuilder()
