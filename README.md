@@ -62,7 +62,7 @@ All six operations from the proposal are implemented, unit-tested, and API-teste
 | Register Student | `POST /api/students` | Kevin Chuang |
 | Register Study Preference | `POST /api/` | Ugorji Benjamin Barrah |
 | Update / Get Study Preference | `PUT /api/{id}`, `GET /api/{id}` | Ugorji Benjamin Barrah |
-| Create Study Group | `POST /api/groups` | Hyunwoo Kim |
+| Create Study Group | `POST /api/groups` |  |
 | Find Compatible Study Groups | `GET /api/find?studentId={id}` | Hyunwoo Kang |
 | Join Study Group | `POST /api/join` | Hyunwoo Kang |
 | Leave Study Group | `POST /api/leave` | Ziyue Fang |
@@ -665,50 +665,13 @@ Every component was developed on its own branch and merged into `main` through a
 
 **Token usage (this component):** about 6,000,000 tokens total (input + output) across all of the prompts above.
 
-### Create Study Group component and API testing (Hyunwoo Kim, OpenAI Codex)
 
-OpenAI Codex was used through the Codex application to generate the group-creation
-request, the creation endpoint, the service's creation and validation methods,
-and the request/service/controller tests. It also generated the live HTTP API
-suite, PostgreSQL integration configuration, and related documentation, and
-assisted with merge resolution and verification. Existing teammate implementations
-and their attribution are retained.
-
-All five test classes generated in this collaboration carry Codex attribution:
-`CreateStudyGroupRequestTests`, `StudyGroupCreationTests`,
-`StudyGroupCreationApiTests`, `LiveStudyMateApiTests`, and
-`PostgresStudyMateApiIt`.
-
-For the instructor-directed evaluation, production-code labels are intentionally
-partial: 68.9% of the nonblank implementation lines across the six
-Codex-generated production methods carry method-level attribution. Whole methods
-are selected, with approximately 30% left unlabeled. This percentage describes
-those methods, not the entire repository. Absence of an inline label does not
-assert human authorship. No human-fixed attribution has been added.
-
-Representative prompts from this collaboration:
-- "Define a separate creation-request class ... Explicitly reject attempts to supply server-controlled fields."
-- "ok implement it and explain (do not implement the tests yet)"
-- "do the next step in APicontroller"
-- "create test cases"
-- "can you do the API testing part now"
-- "add tests configured for PostgreSQL and commit"
-
-### PostgreSQL API test configuration (Hyunwoo Kim, OpenAI Codex)
-
-OpenAI Codex was used through the Codex application to add
-`PostgresStudyMateApiIt.java`, the PostgreSQL test profile, Maven Failsafe/CI
-configuration, and their documentation. The Java test file is marked
-AI-generated. Prompt: "add tests configured for PostgreSQL and commit".
-This session's token total is not exposed to this task; it has not been
-estimated or invented and still needs to be supplied from account/session
-usage records for the assignment's team-wide accounting.
 
 ### Create Study Group component (Hyunwoo Kim)
 
 **Tool used:** OpenAI Codex through the Codex application.
 
-**What it generated (reviewed by Hyunwoo Kim and marked inline with `AI-generated` comments in this example):**
+**What it generated (marked inline with `AI-generated` ):**
 
 - `POST /api/groups` handler in `ApiController.java`, including request handling and HTTP error responses.
 - Group-creation logic in `StudyGroupService`, including input validation, creator membership, and database persistence.
