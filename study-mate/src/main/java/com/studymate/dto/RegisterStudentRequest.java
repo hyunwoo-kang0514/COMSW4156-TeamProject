@@ -1,3 +1,8 @@
+/**
+ * Request body for student registration. Developed with assistance from OpenAI Codex.
+ * See README "AI Documentation" section for details.
+ */
+
 package com.studymate.dto;
 
 import lombok.Getter;
