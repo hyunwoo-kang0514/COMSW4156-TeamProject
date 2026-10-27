@@ -24,6 +24,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+// AI-generated (Claude)
 @ExtendWith(MockitoExtension.class)
 class PreferenceServiceTest {
 
