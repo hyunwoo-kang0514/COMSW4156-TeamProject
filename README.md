@@ -540,7 +540,20 @@ No other third-party source code is copied into the repository. Libraries and to
 
 Tasks for each team member are tracked with **GitHub Issues / GitHub Projects** on the repository (https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject). The owner of each component is listed in the table under [Authors / Team Members](#authors--team-members) and in [Section 1](#1-implementation-status-this-iteration--mvp), and every component was developed on its own branch and merged through a pull request.
 
-*(TODO before submission: add the Project board URL here and confirm the Mentor and Instructor have access.)*
+**Project board:** [StudyMate — Iteration 1](https://github.com/users/hyunwoo-kang0514/projects/1) (public, linked to this repository, so the Mentor and Instructor can view it without an invite).
+
+| Issue | Task | Owner |
+|---|---|---|
+| [#10](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/10) | Project setup: Spring Boot skeleton, PostgreSQL/Supabase connection, H2 test config, CI | @hyunwoo-kang0514 |
+| [#11](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/11) | Find Compatible Study Groups (`GET /api/find`) | @hyunwoo-kang0514 |
+| [#12](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/12) | Register Student (`POST /api/students`) | @kchua220 |
+| [#13](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/13) | Join Study Group (`POST /api/join`) | @hyunwoo-kang0514 |
+| [#14](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/14) | Register / Update / Get Study Preference | @ubb2000 |
+| [#15](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/15) | Create Study Group (`POST /api/groups`) | @hywkim-brian |
+| [#16](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/16) | Leave Study Group (`POST /api/leave`) | @Tobbs2005 |
+| [#17](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/17) | Iteration 1 cleanup: Checkstyle-clean codebase, preference 404 fixes, refreshed reports | @Tobbs2005 |
+| [#18](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/18) | Document AI usage for every component | @hywkim-brian, @kchua220, @ubb2000 |
+| [#19](https://github.com/hyunwoo-kang0514/COMSW4156-TeamProject/issues/19) | Tag the first-iteration release on `main` | Team |
 
 ---
 
