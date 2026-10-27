@@ -594,6 +594,46 @@ Tasks for each team member are tracked with **GitHub Issues / GitHub Projects** 
 
 **Representative prompt:** "Implement my part (Leave Study Group): entity/repository/service logic, the endpoint, validation, failure cases, idempotency, unit tests with mocks, API tests, and the README section."
 
+### Create Study Group component (Hyunwoo Kim)
+
+**Tool used:** None reported. No AI tool usage was reported for this component in Iteration 1.
+
+**AI-generated or AI-debugged code:** None reported. None of this component's files carry an `AI-generated` / `AI-fixed` marker. Files in this component: `POST /api/groups` handler in `ApiController.java`, `StudyGroupService` group-creation logic, `request/CreateStudyGroupRequest.java`, `request/CreateStudyGroupRequestTests.java`, `service/StudyGroupCreationTests.java`, `controller/StudyGroupCreationApiTests.java`, `api/LiveStudyMateApiTests.java`, and the `/api/groups` parts of this README.
+
+**Representative prompts:** N/A.
+
+**Estimated token usage:** 0 reported.
+
+### Register Student component (Kevin Chuang)
+
+**Tool used:** None reported. No AI tool usage was reported for this component in Iteration 1.
+
+**AI-generated or AI-debugged code:** None reported. None of this component's files carry an `AI-generated` / `AI-fixed` marker. Files in this component: `POST /api/students` handler in `ApiController.java`, `StudentService` registration logic, `StudentRepository`, `dto/RegisterStudentRequest.java`, `dto/RegisterStudentResponse.java`, `service/StudentServiceTest.java`, `RegisterStudentIntegrationTest.java`, and the `/api/students` parts of this README.
+
+**Representative prompts:** N/A.
+
+**Estimated token usage:** 0 reported.
+
+### Study Preference component (Ugo Barrah)
+
+**Tool used:** None reported. No AI tool usage was reported for this component in Iteration 1.
+
+**AI-generated or AI-debugged code:** None reported. None of this component's files carry an `AI-generated` / `AI-fixed` marker. Files in this component: preference handlers (`POST /api/`, `PUT /api/{id}`, `GET /api/{id}`) in `ApiController.java`, `service/PreferenceService.java`, `repository/PreferenceRepository.java`, `domain/Preference.java`, `service/PreferenceServiceTest.java`, and the preference parts of this README.
+
+**Representative prompts:** N/A.
+
+**Estimated token usage:** 0 reported.
+
+### Token usage summary
+
+| Member | Component | Tool | Total tokens |
+|---|---|---|---|
+| Hyunwoo Kang | Find / Join Study Group | Claude Code | ~400,000–600,000 (estimate) |
+| Ziyue Fang | Leave Study Group | Claude (Cowork, Opus 5.5) | Not recorded |
+| Hyunwoo Kim | Create Study Group | None reported | 0 |
+| Kevin Chuang | Register Student | None reported | 0 |
+| Ugo Barrah | Study Preference | None reported | 0 |
+
 ---
 
 ## 13. Final Verification
