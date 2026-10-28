@@ -120,7 +120,16 @@ X-API-KEY: bogus
 # Create Study Group (Hyunwoo Kim)
 ######################################################################
 
-### 3a. Harry creates a group -> 200, Harry is its first member
+# Create-group demo adapted with OpenAI Codex.
+# Uses the same seeded H2 server and Harry's key as the rest of this demo.
+# Corrected validation examples use course VALIDATION-DEMO so the extra groups
+# do not affect Alex's COMS4156 matching demonstration later in this file.
+
+### 3a. Successful creation -> 200, Harry is the first member
+# Tests: saves a group, copies the creator's school, sets numMembers=1 and recruiting=true.
+# Verify the response: generated groupId, school="Columbia", memberIds=["hk3382"],
+# numMembers=1 and recruiting=true. Requests 4a/4b reuse this saved group.
+# Implementation: StudyGroupService.createStudyGroup() -> StudyGroupRepository.save().
 # @name createGroup
 POST {{baseUrl}}/groups
 X-API-KEY: {{harryKey}}
@@ -132,44 +141,180 @@ Content-Type: application/json
   "course": "COMS4156",
   "maxMembers": 4,
   "schedules": [
-    { "day": "MONDAY", "startTime": "14:00", "endTime": "16:00" }
+    {
+      "day": "MONDAY",
+      "startTime": "14:00",
+      "endTime": "16:00"
+    }
   ],
-  "studyStyles": ["collaborative", "focused"],
+  "studyStyles": [
+    "collaborative",
+    "focused"
+  ],
   "meetingMode": "IN_PERSON"
 }
 
-### 3b. Invalid meetingMode -> 400 with a clear message
+### 3b. Student lookup: nonexistent creator -> 404 Not Found
+# Tests: a valid API key does not allow creating a group for a nonexistent student.
+# Student 999999999 does not exist in the fresh H2 demo data.
+# Expected error: {"error":"Student not found for ID 999999999"}
+# Implementation: StudentService.findStudentById() queries StudentRepository;
+# StudyGroupService throws NoSuchElementException; ApiController maps it to 404.
 POST {{baseUrl}}/groups
 X-API-KEY: {{harryKey}}
 Content-Type: application/json
 
 {
-  "creatorStudentId": 1,
-  "name": "Bad Group",
-  "course": "COMS4156",
+  "creatorStudentId": 999999999,
+  "name": "Lookup validation group",
+  "course": "VALIDATION-DEMO",
   "maxMembers": 4,
   "schedules": [
-    { "day": "MONDAY", "startTime": "14:00", "endTime": "16:00" }
+    {
+      "day": "MONDAY",
+      "startTime": "14:00",
+      "endTime": "16:00"
+    }
   ],
-  "studyStyles": ["collaborative"],
-  "meetingMode": "in-person"
+  "studyStyles": [
+    "collaborative",
+    "focused"
+  ],
+  "meetingMode": "IN_PERSON"
 }
 
-### 3c. Client tries to set a server-controlled field -> 400
+### 3b-correct. Student lookup corrected: existing creator -> 200
+# Fix: change creatorStudentId from 999999999 to seeded student 1.
+# Expected: saved group, numMembers=1, recruiting=true, and a generated groupId.
 POST {{baseUrl}}/groups
 X-API-KEY: {{harryKey}}
 Content-Type: application/json
 
 {
   "creatorStudentId": 1,
-  "name": "Sneaky Group",
-  "course": "COMS4156",
+  "name": "Lookup validation group",
+  "course": "VALIDATION-DEMO",
   "maxMembers": 4,
-  "numMembers": 0,
   "schedules": [
-    { "day": "MONDAY", "startTime": "14:00", "endTime": "16:00" }
+    {
+      "day": "MONDAY",
+      "startTime": "14:00",
+      "endTime": "16:00"
+    }
   ],
-  "studyStyles": ["collaborative"],
+  "studyStyles": [
+    "collaborative",
+    "focused"
+  ],
+  "meetingMode": "IN_PERSON"
+}
+
+### 3c. Minimum group size: capacity of one -> 400 Bad Request
+# Tests: capacity must be at least two, including the creator. Other input remains valid.
+# Expected error: {"error":"maxMembers must be at least 2."}
+# Implementation: StudyGroupService.createStudyGroup() checks maxMembers < 2;
+# ApiController maps IllegalArgumentException to 400.
+POST {{baseUrl}}/groups
+X-API-KEY: {{harryKey}}
+Content-Type: application/json
+
+{
+  "creatorStudentId": 1,
+  "name": "Capacity validation group",
+  "course": "VALIDATION-DEMO",
+  "maxMembers": 1,
+  "schedules": [
+    {
+      "day": "MONDAY",
+      "startTime": "14:00",
+      "endTime": "16:00"
+    }
+  ],
+  "studyStyles": [
+    "collaborative",
+    "focused"
+  ],
+  "meetingMode": "IN_PERSON"
+}
+
+### 3c-correct. Minimum group size corrected: capacity of two -> 200
+# Fix: change maxMembers from 1 to 2, the smallest permitted capacity.
+# Expected: saved group, numMembers=1, recruiting=true, and a generated groupId.
+POST {{baseUrl}}/groups
+X-API-KEY: {{harryKey}}
+Content-Type: application/json
+
+{
+  "creatorStudentId": 1,
+  "name": "Capacity validation group",
+  "course": "VALIDATION-DEMO",
+  "maxMembers": 2,
+  "schedules": [
+    {
+      "day": "MONDAY",
+      "startTime": "14:00",
+      "endTime": "16:00"
+    }
+  ],
+  "studyStyles": [
+    "collaborative",
+    "focused"
+  ],
+  "meetingMode": "IN_PERSON"
+}
+
+### 3d. Server-controlled field: caller supplies groupId -> 400 Bad Request
+# Tests: the caller cannot choose the database-generated group ID.
+# Expected: Spring error response; this is rejected during JSON conversion,
+# before ApiController.createStudyGroup() runs, so its custom error body is not used.
+# Implementation: CreateStudyGroupRequest.rejectUnknownField(), via @JsonAnySetter.
+POST {{baseUrl}}/groups
+X-API-KEY: {{harryKey}}
+Content-Type: application/json
+
+{
+  "groupId": 999,
+  "creatorStudentId": 1,
+  "name": "Field validation group",
+  "course": "VALIDATION-DEMO",
+  "maxMembers": 4,
+  "schedules": [
+    {
+      "day": "MONDAY",
+      "startTime": "14:00",
+      "endTime": "16:00"
+    }
+  ],
+  "studyStyles": [
+    "collaborative",
+    "focused"
+  ],
+  "meetingMode": "IN_PERSON"
+}
+
+### 3d-correct. Server-controlled field corrected: omit groupId -> 200
+# Fix: remove groupId; the database generates the ID returned in the response.
+# Expected: saved group, numMembers=1, recruiting=true, and a generated groupId.
+POST {{baseUrl}}/groups
+X-API-KEY: {{harryKey}}
+Content-Type: application/json
+
+{
+  "creatorStudentId": 1,
+  "name": "Field validation group",
+  "course": "VALIDATION-DEMO",
+  "maxMembers": 4,
+  "schedules": [
+    {
+      "day": "MONDAY",
+      "startTime": "14:00",
+      "endTime": "16:00"
+    }
+  ],
+  "studyStyles": [
+    "collaborative",
+    "focused"
+  ],
   "meetingMode": "IN_PERSON"
 }
 
