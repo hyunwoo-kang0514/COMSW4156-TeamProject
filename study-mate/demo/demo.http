@@ -1,0 +1,262 @@
+# AI-generated (Claude Code), reviewed by Ziyue Fang. See README "AI Documentation" section.
+#
+# StudyMate first-iteration demo, for the VS Code REST Client extension
+# (humao.rest-client). Click "Send Request" above each request, top to bottom.
+#
+# Setup: start the local H2 server from README Section 5 (port 8081). It loads
+# src/test/resources/local-seed.sql, which provides:
+#   student 1  hk3382 (Harry), key test-key-1, already has a preference
+#   group 2    "Full COMS4156 Group", 2/2 members
+# Restart the server to reset the data before each run.
+#
+# Story: a new student, Alex, registers and sets a preference. Harry creates
+# a group. Alex finds it, joins it, and leaves it.
+#
+# To let the Mentor drive through a tunnel, change @baseUrl to the tunnel URL
+# (for example https://<name>.trycloudflare.com/api).
+
+@baseUrl = http://localhost:8081/api
+@harryKey = test-key-1
+
+### 0. Health check: the service is up
+GET {{baseUrl}}/health
+
+
+######################################################################
+# Register Student (Kevin)
+######################################################################
+
+### 1a. Register Alex -> 201 with a new id and API key
+# @name register
+POST {{baseUrl}}/students
+Content-Type: application/json
+
+{
+  "studentId": "ab1234",
+  "name": "Alex Lee",
+  "email": "alex@example.com",
+  "school": "Columbia",
+  "major": "Computer Science",
+  "year": 3
+}
+
+### 1b. Register the same studentId again -> 409, nothing created
+POST {{baseUrl}}/students
+Content-Type: application/json
+
+{
+  "studentId": "ab1234",
+  "name": "Alex Again",
+  "email": "alex2@example.com",
+  "school": "Columbia",
+  "major": "Computer Science",
+  "year": 3
+}
+
+### 1c. Register with missing fields -> 400
+POST {{baseUrl}}/students
+Content-Type: application/json
+
+{
+  "studentId": "cd5678"
+}
+
+
+# Alex's database id and key, taken from the response to 1a
+@alexId = {{register.response.body.$.id}}
+@alexKey = {{register.response.body.$.apiKey}}
+
+
+######################################################################
+# Study Preference (Ugorji)
+######################################################################
+
+### 2a. Register Alex's preference -> 201
+POST {{baseUrl}}/
+X-API-KEY: {{alexKey}}
+Content-Type: application/json
+
+{
+  "id": {{alexId}},
+  "course": "COMS4156",
+  "meetingMode": "IN_PERSON",
+  "preferredGroupSize": 4,
+  "studyStyles": ["collaborative"],
+  "availableTimes": [
+    { "day": "MONDAY", "startTime": "13:00", "endTime": "16:00" }
+  ]
+}
+
+### 2b. Read it back -> 200
+GET {{baseUrl}}/{{alexId}}
+X-API-KEY: {{alexKey}}
+
+### 2c. Update it: add a study style and a Wednesday slot -> 200, lists replaced
+PUT {{baseUrl}}/{{alexId}}
+X-API-KEY: {{alexKey}}
+Content-Type: application/json
+
+{
+  "course": "COMS4156",
+  "meetingMode": "IN_PERSON",
+  "preferredGroupSize": 4,
+  "studyStyles": ["collaborative", "focused"],
+  "availableTimes": [
+    { "day": "MONDAY", "startTime": "13:00", "endTime": "16:00" },
+    { "day": "WEDNESDAY", "startTime": "18:00", "endTime": "20:00" }
+  ]
+}
+
+### 2d. Preference for a student that does not exist -> 404
+GET {{baseUrl}}/999
+X-API-KEY: {{alexKey}}
+
+### 2e. Bogus API key -> 401
+GET {{baseUrl}}/{{alexId}}
+X-API-KEY: bogus
+
+
+######################################################################
+# Create Study Group (Hyunwoo Kim)
+######################################################################
+
+### 3a. Harry creates a group -> 200, Harry is its first member
+# @name createGroup
+POST {{baseUrl}}/groups
+X-API-KEY: {{harryKey}}
+Content-Type: application/json
+
+{
+  "creatorStudentId": 1,
+  "name": "COMS4156 Monday Crew",
+  "course": "COMS4156",
+  "maxMembers": 4,
+  "schedules": [
+    { "day": "MONDAY", "startTime": "14:00", "endTime": "16:00" }
+  ],
+  "studyStyles": ["collaborative", "focused"],
+  "meetingMode": "IN_PERSON"
+}
+
+### 3b. Invalid meetingMode -> 400 with a clear message
+POST {{baseUrl}}/groups
+X-API-KEY: {{harryKey}}
+Content-Type: application/json
+
+{
+  "creatorStudentId": 1,
+  "name": "Bad Group",
+  "course": "COMS4156",
+  "maxMembers": 4,
+  "schedules": [
+    { "day": "MONDAY", "startTime": "14:00", "endTime": "16:00" }
+  ],
+  "studyStyles": ["collaborative"],
+  "meetingMode": "in-person"
+}
+
+### 3c. Client tries to set a server-controlled field -> 400
+POST {{baseUrl}}/groups
+X-API-KEY: {{harryKey}}
+Content-Type: application/json
+
+{
+  "creatorStudentId": 1,
+  "name": "Sneaky Group",
+  "course": "COMS4156",
+  "maxMembers": 4,
+  "numMembers": 0,
+  "schedules": [
+    { "day": "MONDAY", "startTime": "14:00", "endTime": "16:00" }
+  ],
+  "studyStyles": ["collaborative"],
+  "meetingMode": "IN_PERSON"
+}
+
+
+@groupId = {{createGroup.response.body.$.groupId}}
+
+
+######################################################################
+# Find and Join (Hyunwoo Kang)
+######################################################################
+
+### 4a. Find groups for Alex -> 200, Harry's group ranked first
+GET {{baseUrl}}/find?studentId={{alexId}}
+X-API-KEY: {{alexKey}}
+
+### 4b. Alex joins Harry's group -> 200, numMembers 1 -> 2
+POST {{baseUrl}}/join
+X-API-KEY: {{alexKey}}
+Content-Type: application/json
+
+{ "studentId": {{alexId}}, "groupId": {{groupId}} }
+
+### 4c. Same join again (client retry) -> 200, Alex is not added twice
+POST {{baseUrl}}/join
+X-API-KEY: {{alexKey}}
+Content-Type: application/json
+
+{ "studentId": {{alexId}}, "groupId": {{groupId}} }
+
+### 4d. Join the full seeded group 2 -> 400
+POST {{baseUrl}}/join
+X-API-KEY: {{alexKey}}
+Content-Type: application/json
+
+{ "studentId": {{alexId}}, "groupId": 2 }
+
+### 4e. Find for a student that does not exist -> 404
+GET {{baseUrl}}/find?studentId=999
+X-API-KEY: {{alexKey}}
+
+
+######################################################################
+# Leave Study Group (Ziyue)
+######################################################################
+
+### 5a. Harry tries to remove Alex using Harry's key -> 403, nothing changes
+POST {{baseUrl}}/leave
+X-API-KEY: {{harryKey}}
+Content-Type: application/json
+
+{ "studentId": {{alexId}}, "groupId": {{groupId}} }
+
+### 5b. Alex leaves -> 200, numMembers 2 -> 1
+POST {{baseUrl}}/leave
+X-API-KEY: {{alexKey}}
+Content-Type: application/json
+
+{ "studentId": {{alexId}}, "groupId": {{groupId}} }
+
+### 5c. Same leave again (client retry) -> 200, nothing changes
+POST {{baseUrl}}/leave
+X-API-KEY: {{alexKey}}
+Content-Type: application/json
+
+{ "studentId": {{alexId}}, "groupId": {{groupId}} }
+
+### 5d. Missing groupId -> 400
+POST {{baseUrl}}/leave
+X-API-KEY: {{alexKey}}
+Content-Type: application/json
+
+{ "studentId": {{alexId}} }
+
+
+######################################################################
+# Mentor drives: edit any field below and send
+######################################################################
+
+### 6. Mentor: register a student of your own
+POST {{baseUrl}}/students
+Content-Type: application/json
+
+{
+  "studentId": "mentor1",
+  "name": "Mentor",
+  "email": "mentor@example.com",
+  "school": "Columbia",
+  "major": "Computer Science",
+  "year": 5
+}
